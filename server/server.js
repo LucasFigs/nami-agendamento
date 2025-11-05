@@ -51,6 +51,23 @@ try {
     console.log('Rotas de agendamento não carregadas:', error.message);
 }
 
+try {
+    const medicoRoutes = require('./routes/medicoRoutes.js');
+    app.use('/api/medicos', medicoRoutes);
+    console.log('Rotas de médicos carregadas');
+} catch (error) {
+    console.log('Rotas de médicos não carregadas:', error.message);
+}
+
+// Adicionar no server.js após as outras rotas:
+try {
+    const usuarioRoutes = require('./routes/usuarioRoutes');
+    app.use('/api/usuarios', usuarioRoutes);
+    console.log('Rotas de usuários carregadas');
+} catch (error) {
+    console.log('Rotas de usuários não carregadas:', error.message);
+}
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);

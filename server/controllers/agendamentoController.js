@@ -81,3 +81,76 @@ exports.listarAgendamentos = async (req, res) => {
         });
     }
 };
+
+exports.cancelarAgendamento = async (req, res) => {
+    try {
+        const agendamentoId = req.params.id;
+        const usuarioId = req.usuario.id;
+
+        const agendamento = await Agendamento.findById(agendamentoId);
+
+        if (!agendamento) {
+            return res.status(404).json({
+                success: false,
+                message: 'Agendamento não encontrado'
+            });
+        }
+
+        // Verificar se o usuário é o paciente dono do agendamento
+        if (agendamento.paciente.toString() !== usuarioId) {
+            return res.status(403).json({
+                success: false,
+                message: 'Acesso negado. Este agendamento não pertence a você.'
+            });
+        }
+
+        // Verificar se já não está cancelado
+        if (agendamento.status === 'cancelado') {
+            return res.status(400).json({
+                success: false,
+                message: 'Agendamento já está cancelado'
+            });
+        }
+
+        agendamento.status = 'cancelado';
+        await agendamento.save();
+
+        res.json({
+            success: true,
+            message: 'Agendamento cancelado com sucesso',
+            data: agendamento
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao cancelar agendamento',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Listar todos os agendamentos (admin)
+// @route   GET /api/agendamentos/todos
+// @access  Private/Admin
+exports.listarTodosAgendamentos = async (req, res) => {
+    try {
+        const agendamentos = await Agendamento.find()
+            .populate('paciente', 'nome email')
+            .populate('medico', 'especialidade consultorio')
+            .sort({ data: -1 });
+
+        res.json({
+            success: true,
+            count: agendamentos.length,
+            data: agendamentos
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao listar agendamentos',
+            error: error.message
+        });
+    }
+};
