@@ -1,27 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Login.css';
+import './LoginMedicoAdmin.css';
 
-const Login = () => {
-  const [email, setEmail] = useState('');
+const LoginMedicoAdmin = () => {
+  const [matricula, setMatricula] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotMatricula, setForgotMatricula] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!matricula || !password) {
       alert('Por favor, preencha todos os campos');
       return;
     }
 
     setLoading(true);
     try {
-      // Simulação de login
+      // Simulação de login médico
       setTimeout(() => {
         setLoading(false);
-        navigate('/dashboard');
+        navigate('/dashboard-medico');
       }, 1500);
       
     } catch (error) {
@@ -31,8 +31,8 @@ const Login = () => {
   };
 
   const handleForgotPassword = async () => {
-    if (!forgotEmail) {
-      alert('Por favor, informe seu email');
+    if (!forgotMatricula) {
+      alert('Por favor, informe sua matrícula');
       return;
     }
 
@@ -41,9 +41,9 @@ const Login = () => {
       // Simulação de envio de email
       setTimeout(() => {
         setLoading(false);
-        alert(`Email de redefinição enviado para: ${forgotEmail}`);
+        alert(`Email de redefinição enviado para a matrícula: ${forgotMatricula}`);
         setShowForgotPassword(false);
-        setForgotEmail('');
+        setForgotMatricula('');
       }, 1500);
       
     } catch (error) {
@@ -53,16 +53,16 @@ const Login = () => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-background">
-        <div className="login-content">
+    <div className="login-medico-admin-container">
+      <div className="login-medico-admin-background">
+        <div className="login-medico-admin-content">
           {/* Header com Logo */}
           <div className="logo-container">
             <div className="logo-circle">
               <span className="logo-text">NAMI</span>
             </div>
             <h1 className="title">NAMI UNIFOR</h1>
-            <p className="subtitle">Sistema de Agendamento de Consultas</p>
+            <p className="subtitle">Área Médica/Admin</p>
           </div>
 
           {/* Modal Esqueci Senha */}
@@ -70,13 +70,13 @@ const Login = () => {
             <div className="modal-overlay">
               <div className="modal-content">
                 <h3>Redefinir Senha</h3>
-                <p>Informe seu email para receber as instruções de redefinição:</p>
+                <p>Informe sua matrícula para receber as instruções de redefinição:</p>
                 <input
                   className="input"
-                  placeholder="Seu email cadastrado"
-                  value={forgotEmail}
-                  onChange={(e) => setForgotEmail(e.target.value)}
-                  type="email"
+                  placeholder="Sua matrícula UNIFOR"
+                  value={forgotMatricula}
+                  onChange={(e) => setForgotMatricula(e.target.value)}
+                  type="text"
                 />
                 <div className="modal-buttons">
                   <button 
@@ -97,18 +97,18 @@ const Login = () => {
             </div>
           )}
 
-          {/* Formulário de Login */}
+          {/* Formulário de Login Médico/Admin */}
           <div className="form-container">
-            <h2 className="form-title">Acesse sua Conta</h2>
+            <h2 className="form-title">Acesso Médico/Admin</h2>
             
             <div className="input-group">
-              <label className="input-label">Email</label>
+              <label className="input-label">Matrícula UNIFOR</label>
               <input
                 className="input"
-                placeholder="seu.email@unifor.br"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                type="email"
+                placeholder="Sua matrícula UNIFOR"
+                value={matricula}
+                onChange={(e) => setMatricula(e.target.value)}
+                type="text"
               />
             </div>
 
@@ -134,11 +134,12 @@ const Login = () => {
                   Entrando...
                 </>
               ) : (
-                'Entrar na Conta'
+                'Acessar Área Médica/Admin'
               )}
             </button>
 
             <div className="links-container">
+              {/* BOTÃO CORRIGIDO - COM onClick FUNCIONAL */}
               <button 
                 className="link-button"
                 onClick={() => setShowForgotPassword(true)}
@@ -152,24 +153,19 @@ const Login = () => {
 
               <button 
                 className="secondary-button"
-                onClick={() => navigate('/cadastro')}
+                onClick={() => navigate('/login')}
               >
-                 Criar Nova Conta
-              </button>
-
-              {/* BOTÃO ATUALIZADO COM NOVO NOME DO ARQUIVO */}
-              <button 
-                className="admin-button"
-                onClick={() => navigate('/login-medico')}
-              >
-                 Área do Médico/Admin
+                 Área do Paciente
               </button>
             </div>
           </div>
 
           {/* Footer */}
           <div className="login-footer">
-            <p>Sistema desenvolvido para a UNIFOR</p>
+            <p>Sistema desenvolvido para a UNIFOR - Versão Médica/Admin</p>
+            <p style={{fontSize: '11px', opacity: 0.7, marginTop: '5px'}}>
+              Acesso restrito a profissionais cadastrados pela administração
+            </p>
           </div>
         </div>
       </div>
@@ -177,4 +173,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default LoginMedicoAdmin;
