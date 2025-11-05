@@ -1,9 +1,10 @@
 const express = require('express');
+const { criarAgendamento, listarAgendamentos } = require('../controllers/agendamentoController');
+const proteger = require('../middleware/authMiddleware');
+
 const router = express.Router();
 
-// Rota temporária
-router.get('/', (req, res) => {
-  res.json({ message: 'Rota de agendamentos funcionando!' });
-});
+router.post('/', proteger, criarAgendamento);
+router.get('/', proteger, listarAgendamentos);
 
 module.exports = router;

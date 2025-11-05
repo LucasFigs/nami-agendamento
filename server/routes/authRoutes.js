@@ -1,13 +1,17 @@
 const express = require('express');
+const { registrar, login } = require('../controllers/authController');
+
 const router = express.Router();
 
-// Rota temporária - implementaremos depois
-router.post('/registro', (req, res) => {
-  res.json({ message: 'Rota de registro funcionando!' });
-});
+router.post('/registro', registrar);
+router.post('/login', login);
 
-router.post('/login', (req, res) => {
-  res.json({ message: 'Rota de login funcionando!' });
+// Rota de teste
+router.get('/test', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Rota de autenticação funcionando!'
+    });
 });
 
 module.exports = router;
