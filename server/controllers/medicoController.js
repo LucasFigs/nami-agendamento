@@ -8,7 +8,7 @@ exports.listarMedicos = async (req, res) => {
     try {
         const medicos = await Medico.find({ ativo: true })
             .populate('usuario', 'nome email telefone')
-            .select('-diasAtendimento.horarios'); // Não retorna horários específicos por segurança
+        //.select('-diasAtendimento.horarios'); // Não retorna horários específicos por segurança
 
         res.json({
             success: true,
@@ -61,9 +61,9 @@ exports.buscarMedicosPorEspecialidade = async (req, res) => {
     try {
         const { especialidade } = req.params;
 
-        const medicos = await Medico.find({ 
+        const medicos = await Medico.find({
             especialidade: new RegExp(especialidade, 'i'),
-            ativo: true 
+            ativo: true
         }).populate('usuario', 'nome email telefone');
 
         res.json({
@@ -76,6 +76,132 @@ exports.buscarMedicosPorEspecialidade = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Erro ao buscar médicos por especialidade',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Buscar horários disponíveis do médico
+// @route   GET /api/medicos/:id/horarios-disponiveis
+// @access  Public
+exports.buscarHorariosDisponiveis = async (req, res) => {
+    try {
+        const { data } = req.query;
+        const medicoId = req.params.id;
+
+        console.log('=== DEBUG HORÁRIOS - INÍCIO ===');
+        console.log('Data recebida do frontend:', data);
+        console.log('Médico ID:', medicoId);
+
+        const medico = await Medico.findById(medicoId).populate('usuario', 'nome');
+        
+        if (!medico) {
+            console.log('Médico não encontrado');
+            return res.status(404).json({
+                success: false,
+                message: 'Médico não encontrado'
+            });
+        }
+
+        console.log('Médico:', medico.usuario?.nome);
+        console.log('Especialidade:', medico.especialidade);
+        console.log('Dias atendimento COMPLETO:', JSON.stringify(medico.diasAtendimento, null, 2));
+
+        // === CORREÇÃO: GARANTIR QUE A DATA SEJA TRATADA CORRETAMENTE ===
+        const dataObj = new Date(data + 'T00:00:00Z'); // Forçar UTC
+        console.log('Data UTC:', dataObj.toUTCString());
+
+        if (isNaN(dataObj.getTime())) {
+            console.log('Data inválida');
+            return res.status(400).json({
+                success: false,
+                message: 'Data inválida'
+            });
+        }
+
+        const diaSemanaNumero = dataObj.getUTCDay(); // 0=domingo, 1=segunda, etc.
+        console.log('Dia da semana (número):', diaSemanaNumero);
+
+        const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+        const diaSemanaSolicitado = diasSemana[diaSemanaNumero];
+        console.log('Dia da semana (texto):', diaSemanaSolicitado);
+
+        // Buscar o dia de atendimento
+        const diaAtendimento = medico.diasAtendimento.find(
+            dia => dia.diaSemana === diaSemanaSolicitado
+        );
+
+        console.log('Dia atendimento encontrado:', diaAtendimento);
+
+        if (!diaAtendimento) {
+            console.log('Médico não atende neste dia:', diaSemanaSolicitado);
+            return res.json({
+                success: true,
+                data: {
+                    medico: medico.usuario,
+                    especialidade: medico.especialidade,
+                    data: data,
+                    horariosDisponiveis: [],
+                    totalDisponivel: 0,
+                    mensagem: `Médico não atende às ${diaSemanaSolicitado}s`
+                }
+            });
+        }
+
+        console.log('Horários configurados:', diaAtendimento.horarios);
+
+        // === PARTE DOS AGENDAMENTOS (MANTENHA COMO ESTAVA) ===
+        const Agendamento = require('../models/Agendamento');
+        
+        // Buscar agendamentos para esta data específica
+        const dataInicio = new Date(data);
+        dataInicio.setHours(0, 0, 0, 0);
+        
+        const dataFim = new Date(data);
+        dataFim.setHours(23, 59, 59, 999);
+
+        console.log('Buscando agendamentos entre:', dataInicio, 'e', dataFim);
+
+        const agendamentos = await Agendamento.find({
+            medico: medicoId,
+            data: {
+                $gte: dataInicio,
+                $lte: dataFim
+            },
+            status: { $in: ['agendado', 'confirmado'] }
+        });
+
+        console.log('Agendamentos encontrados:', agendamentos.length);
+        console.log('Agendamentos:', agendamentos);
+
+        const horariosOcupados = agendamentos.map(ag => ag.horario);
+        console.log('Horários ocupados:', horariosOcupados);
+
+        // Filtrar horários disponíveis
+        const horariosDisponiveis = diaAtendimento.horarios.filter(
+            horario => !horariosOcupados.includes(horario)
+        );
+
+        console.log('Horários disponíveis finais:', horariosDisponiveis);
+        console.log('=== DEBUG HORÁRIOS - FIM ===');
+
+        res.json({
+            success: true,
+            data: {
+                medico: medico.usuario,
+                especialidade: medico.especialidade,
+                data: data,
+                horariosDisponiveis: horariosDisponiveis,
+                totalDisponivel: horariosDisponiveis.length,
+                diaSemana: diaSemanaSolicitado
+            }
+        });
+
+    } catch (error) {
+        console.error('Erro completo:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao buscar horários disponíveis',
             error: error.message
         });
     }
@@ -206,67 +332,6 @@ exports.deletarMedico = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Erro ao deletar médico',
-            error: error.message
-        });
-    }
-};
-
-// @desc    Buscar horários disponíveis do médico
-// @route   GET /api/medicos/:id/horarios-disponiveis
-// @access  Public
-exports.buscarHorariosDisponiveis = async (req, res) => {
-    try {
-        const { data } = req.query;
-        const medicoId = req.params.id;
-
-        const medico = await Medico.findById(medicoId);
-        
-        if (!medico) {
-            return res.status(404).json({
-                success: false,
-                message: 'Médico não encontrado'
-            });
-        }
-
-        // Buscar agendamentos do médico na data específica
-        const Agendamento = require('../models/Agendamento');
-        const agendamentos = await Agendamento.find({
-            medico: medicoId,
-            data: new Date(data),
-            status: { $in: ['agendado', 'confirmado'] }
-        });
-
-        const horariosOcupados = agendamentos.map(ag => ag.horario);
-
-        // Encontrar dia da semana da data solicitada
-        const dataObj = new Date(data);
-        const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
-        const diaSemanaSolicitado = diasSemana[dataObj.getDay()];
-
-        // Buscar horários disponíveis para esse dia
-        const diaAtendimento = medico.diasAtendimento.find(
-            dia => dia.diaSemana === diaSemanaSolicitado
-        );
-
-        const horariosDisponiveis = diaAtendimento 
-            ? diaAtendimento.horarios.filter(horario => !horariosOcupados.includes(horario))
-            : [];
-
-        res.json({
-            success: true,
-            data: {
-                medico: medico.usuario,
-                especialidade: medico.especialidade,
-                data: data,
-                horariosDisponiveis: horariosDisponiveis,
-                totalDisponivel: horariosDisponiveis.length
-            }
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Erro ao buscar horários disponíveis',
             error: error.message
         });
     }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/authService';
 import './Login.css';
 
 const Login = () => {
@@ -8,6 +9,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async () => {
@@ -17,16 +19,43 @@ const Login = () => {
     }
 
     setLoading(true);
+    setError('');
+
     try {
-      // Simulação de login
-      setTimeout(() => {
-        setLoading(false);
-        navigate('/dashboard');
-      }, 1500);
+      // Verificar se é email de admin/medico
+      const isMedicoAdmin = email.includes('@nami') || email.includes('admin');
       
+      if (isMedicoAdmin) {
+        // Redirecionar para login de médico/admin
+        navigate('/login-medico', { 
+          state: { email: email, password: password } 
+        });
+        return;
+      }
+
+      // Login de paciente normal
+const result = await authService.loginPaciente(email, password);
+
+if (result.usuario) { // MUDOU: result.user → result.usuario
+  // Redirecionar baseado no tipo de usuário
+  switch (result.usuario.tipo) { // MUDOU: result.user → result.usuario
+    case 'paciente':
+      navigate('/dashboard');
+      break;
+    case 'medico':
+      navigate('/dashboard-medico');
+      break;
+    case 'admin':
+      navigate('/dashboard-medico');
+      break;
+    default:
+      navigate('/dashboard');
+  }
+}
     } catch (error) {
+      setError(error.message || 'Erro ao fazer login. Verifique suas credenciais.');
+    } finally {
       setLoading(false);
-      alert('Falha no login. Verifique suas credenciais.');
     }
   };
 
@@ -38,7 +67,7 @@ const Login = () => {
 
     setLoading(true);
     try {
-      // Simulação de envio de email
+      // Simulação de envio de email (implementar depois)
       setTimeout(() => {
         setLoading(false);
         alert(`Email de redefinição enviado para: ${forgotEmail}`);
@@ -101,6 +130,20 @@ const Login = () => {
           <div className="form-container">
             <h2 className="form-title">Acesse sua Conta</h2>
             
+            {error && (
+              <div className="alert-error" style={{
+                background: '#fee',
+                border: '1px solid #fcc',
+                color: '#c33',
+                padding: '12px',
+                borderRadius: '8px',
+                marginBottom: '20px',
+                textAlign: 'center'
+              }}>
+                {error}
+              </div>
+            )}
+
             <div className="input-group">
               <label className="input-label">Email</label>
               <input
@@ -157,7 +200,6 @@ const Login = () => {
                  Criar Nova Conta
               </button>
 
-              {/* BOTÃO ATUALIZADO COM NOVO NOME DO ARQUIVO */}
               <button 
                 className="admin-button"
                 onClick={() => navigate('/login-medico')}

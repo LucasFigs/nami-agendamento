@@ -2,11 +2,11 @@ const express = require('express');
 const {
     listarMedicos,
     buscarMedicoPorId,
-    buscarMedicosPorEspecialidade,
     criarMedico,
     atualizarMedico,
     deletarMedico,
-    buscarHorariosDisponiveis
+    buscarHorariosDisponiveis,
+    buscarMedicosPorEspecialidade
 } = require('../controllers/medicoController');
 
 const proteger = require('../middleware/authMiddleware');
@@ -16,9 +16,9 @@ const router = express.Router();
 
 // Rotas públicas
 router.get('/', listarMedicos);
-router.get('/especialidade/:especialidade', buscarMedicosPorEspecialidade);
 router.get('/:id', buscarMedicoPorId);
 router.get('/:id/horarios-disponiveis', buscarHorariosDisponiveis);
+router.get('/especialidade/:especialidade', buscarMedicosPorEspecialidade);
 
 // Rotas protegidas - apenas admin
 router.post('/', proteger, adminOnly, criarMedico);
