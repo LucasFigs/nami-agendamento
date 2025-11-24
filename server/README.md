@@ -10,200 +10,250 @@ Sistema completo de agendamentos médicos desenvolvido em Node.js com Express e 
 - **Segurança:** Bcrypt para hash de senhas
 - **CORS:** Habilitado para integração frontend
 
-## 📁 Estrutura do Projeto
-```
-nami-agendamento/
-├── scripts/
-│   └── seedAdmin.js          # Script para criar usuário admin
-├── controllers/
-│   ├── authController.js     # Autenticação (login/registro)
-│   ├── agendamentoController.js # Gestão de agendamentos
-│   ├── medicoController.js   # CRUD de médicos
-│   └── usuarioController.js  # Gestão de usuários
-├── models/
-│   ├── Usuario.js           # Schema de usuários
-│   ├── Medico.js            # Schema de médicos
-│   └── Agendamento.js       # Schema de agendamentos
-├── routes/
-│   ├── authRoutes.js        # Rotas de autenticação
-│   ├── agendamentoRoutes.js # Rotas de agendamentos
-│   ├── medicoRoutes.js      # Rotas de médicos
-│   └── usuarioRoutes.js     # Rotas de usuários
-├── middleware/
-│   ├── authMiddleware.js    # Middleware de autenticação
-│   └── adminMiddleware.js   # Middleware de admin
-├── server.js               # Arquivo principal
-├── package.json
-└── .env                    # Variáveis de ambiente
-```
+---
 
-## 👥 Tipos de Usuários
-1. **Paciente:** Pode agendar consultas e gerenciar seu perfil
-2. **Médico:** Pode visualizar seus agendamentos (em desenvolvimento)
-3. **Administrador:** Gerencia todo o sistema (usuários, médicos, agendamentos)
+## 🧪 DEMONSTRAÇÃO NA APRESENTAÇÃO
 
-## 🔐 Sistema de Autenticação
-- Registro e login de usuários
-- Tokens JWT com expiração de 30 dias
-- Proteção de rotas com middleware de autenticação
-- Hash de senhas com Bcrypt
+### 📋 Fluxo de Demonstração Recomendado
 
-## 🏥 Funcionalidades Implementadas
-
-### 🔑 Autenticação
-- ✅ Registro de usuários (pacientes)
-- ✅ Login com JWT
-- ✅ Middleware de proteção de rotas
-- ✅ Criação de usuário admin via script
-
-### 👥 Gestão de Usuários
-- ✅ CRUD completo de usuários
-- ✅ Atualização de perfil
-- ✅ Desativação de conta
-- ✅ Listagem de usuários (admin)
-
-### 🩺 Gestão de Médicos
-- ✅ CRUD completo de médicos
-- ✅ Listagem pública de médicos
-- ✅ Busca por especialidade
-- ✅ Definição de horários disponíveis
-- ✅ Verificação de horários disponíveis
-
-### 📅 Sistema de Agendamentos
-- ✅ Criação de agendamentos
-- ✅ Listagem de agendamentos do paciente
-- ✅ Cancelamento de agendamentos
-- ✅ Verificação de conflitos de horário
-- ✅ Listagem completa de agendamentos (admin)
-
-## 🗃️ Modelos de Dados
-
-### Usuario
-```javascript
-{
-  nome: String,
-  email: String (único),
-  senha: String (hash),
-  tipo: ['paciente', 'medico', 'admin'],
-  matricula: String (para pacientes),
-  telefone: String,
-  ativo: Boolean
-}
-```
-
-### Medico
-```javascript
-{
-  usuario: ObjectId (ref: Usuario),
-  especialidade: String,
-  crm: String (único),
-  consultorio: String,
-  diasAtendimento: [{
-    diaSemana: String,
-    horarios: [String]
-  }],
-  ativo: Boolean
-}
-```
-
-### Agendamento
-```javascript
-{
-  paciente: ObjectId (ref: Usuario),
-  medico: ObjectId (ref: Medico),
-  data: Date,
-  horario: String,
-  especialidade: String,
-  status: ['agendado', 'confirmado', 'cancelado', 'realizado', 'faltou'],
-  observacoes: String
-}
-```
-
-## 🚀 Como Executar o Projeto
-
-### Pré-requisitos
-- Node.js instalado
-- MongoDB Atlas ou local
-- Insomnia/Postman para testes
-
-### Instalação
+#### 1. 🔑 CONFIGURAÇÃO INICIAL
 ```bash
-# Clone o repositório
-git clone [url-do-repositorio]
-
-# Instale as dependências
-npm install
-
-# Configure as variáveis de ambiente
-cp .env.example .env
-# Edite o .env com suas configurações
-
-# Crie o usuário admin inicial
-node scripts/seedAdmin.js
-
-# Inicie o servidor
+# Iniciar servidor
 npm start
+
+# Verificar status da API
+GET http://localhost:5000/
 ```
 
-### Variáveis de Ambiente (.env)
-```env
-MONGODB_URI=sua_string_de_conexao_mongodb
-JWT_SECRET=seu_jwt_secret
-PORT=5000
+#### 2. 👥 CADASTRO E AUTENTICAÇÃO
+
+**Registrar Paciente:**
+```http
+POST http://localhost:5000/api/auth/registro
+Content-Type: application/json
+
+{
+  "nome": "João Silva",
+  "email": "joao.silva@unifor.br",
+  "senha": "123456",
+  "tipo": "paciente",
+  "matricula": "20230012345",
+  "telefone": "(85) 99999-9999"
+}
 ```
 
-## 🧪 Testando a API
+**Login do Paciente:**
+```http
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
 
-### 1. Configuração Inicial
+{
+  "email": "joao.silva@unifor.br",
+  "senha": "123456"
+}
+```
+
+**💡 Guarde o token retornado para as próximas requisições!**
+
+#### 3. 🩺 GERENCIAMENTO DE MÉDICOS (Como Admin)
+
+**Login como Administrador:**
+```http
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@nami.com",
+  "senha": "admin123"
+}
+```
+
+**Criar Médico:**
+```http
+POST http://localhost:5000/api/medicos
+Content-Type: application/json
+Authorization: Bearer [TOKEN_ADMIN]
+
+{
+  "usuarioId": "[ID_DO_USUARIO_MEDICO]",
+  "especialidade": "Cardiologista",
+  "crm": "CRM/CE 12345",
+  "consultorio": "Sala 201",
+  "diasAtendimento": [
+    {
+      "diaSemana": "segunda",
+      "horarios": ["08:00", "09:00", "10:00", "14:00", "15:00"]
+    },
+    {
+      "diaSemana": "quarta", 
+      "horarios": ["08:00", "09:00", "10:00", "14:00", "15:00"]
+    }
+  ]
+}
+```
+
+**Listar Médicos Disponíveis:**
+```http
+GET http://localhost:5000/api/medicos
+Authorization: Bearer [TOKEN_PACIENTE]
+```
+
+#### 4. 📅 SISTEMA DE AGENDAMENTOS
+
+**Ver Horários Disponíveis de um Médico:**
+```http
+GET http://localhost:5000/api/medicos/[MEDICO_ID]/horarios-disponiveis?data=2024-01-20
+Authorization: Bearer [TOKEN_PACIENTE]
+```
+
+**Criar Agendamento:**
+```http
+POST http://localhost:5000/api/agendamentos
+Content-Type: application/json
+Authorization: Bearer [TOKEN_PACIENTE]
+
+{
+  "medicoId": "[MEDICO_ID]",
+  "data": "2024-01-20",
+  "horario": "09:00"
+}
+```
+
+**Listar Meus Agendamentos:**
+```http
+GET http://localhost:5000/api/agendamentos
+Authorization: Bearer [TOKEN_PACIENTE]
+```
+
+**Cancelar Agendamento:**
+```http
+PUT http://localhost:5000/api/agendamentos/[AGENDAMENTO_ID]/cancelar
+Authorization: Bearer [TOKEN_PACIENTE]
+```
+
+#### 5. 👨‍💼 PAINEL ADMINISTRATIVO
+
+**Listar Todos os Usuários:**
+```http
+GET http://localhost:5000/api/usuarios
+Authorization: Bearer [TOKEN_ADMIN]
+```
+
+**Listar Todos os Agendamentos:**
+```http
+GET http://localhost:5000/api/agendamentos/todos
+Authorization: Bearer [TOKEN_ADMIN]
+```
+
+**Buscar Médicos por Especialidade:**
+```http
+GET http://localhost:5000/api/medicos/especialidade/Cardiologista
+Authorization: Bearer [TOKEN_PACIENTE]
+```
+
+---
+
+## 🎯 CENÁRIOS PARA DEMONSTRAR
+
+### ✅ **Cenário 1: Fluxo Completo do Paciente**
+1. Registrar novo paciente
+2. Fazer login
+3. Listar médicos disponíveis
+4. Ver horários de um médico
+5. Fazer agendamento
+6. Listar seus agendamentos
+7. Cancelar um agendamento
+
+### ✅ **Cenário 2: Gestão Administrativa**
+1. Login como admin
+2. Criar novo médico
+3. Listar todos os usuários
+4. Visualizar todos os agendamentos
+5. Gerenciar médicos
+
+### ✅ **Cenário 3: Validações do Sistema**
+1. Tentar agendar horário ocupado
+2. Tentar criar médico sem ser admin
+3. Tentar acessar dados de outro usuário
+4. Testar validação de dados
+
+---
+
+## 🔧 COMANDOS RÁPIDOS PARA APRESENTAÇÃO
+
+### Inicialização Rápida:
 ```bash
-node scripts/seedAdmin.js
+# Terminal 1 - Backend
 npm start
+
+# Terminal 2 - Criar dados de teste
+node scripts/seedAdmin.js
 ```
 
-### 2. Fluxo de Teste Recomendado
-1. **Login como Admin** (`admin@nami.com` / `admin123`)
-2. **Criar Médico** (usando ID de usuário existente)
-3. **Registrar Paciente** 
-4. **Login como Paciente**
-5. **Criar Agendamento**
-6. **Testar CRUDs completos**
+### URLs para Teste Rápido:
+```bash
+# Status da API
+http://localhost:5000/
 
-### 3. Endpoints Principais
+# Documentação (se houver)
+http://localhost:5000/api/docs
+```
 
-#### Autenticação
-- `POST /api/auth/registro` - Registrar usuário
-- `POST /api/auth/login` - Login
-- `GET /api/auth/test` - Teste de rota
+### Dados de Teste Pré-configurados:
+```javascript
+// Admin (já criado pelo seed)
+Email: admin@nami.com
+Senha: admin123
 
-#### Médicos
-- `GET /api/medicos` - Listar médicos
-- `GET /api/medicos/especialidade/:especialidade` - Buscar por especialidade
-- `POST /api/medicos` - Criar médico (admin)
-- `GET /api/medicos/:id/horarios-disponiveis` - Horários disponíveis
+// Paciente de teste (criar durante demo)
+Email: demo.paciente@unifor.br
+Senha: 123456
 
-#### Agendamentos
-- `POST /api/agendamentos` - Criar agendamento
-- `GET /api/agendamentos` - Meus agendamentos
-- `PUT /api/agendamentos/:id/cancelar` - Cancelar agendamento
-- `GET /api/agendamentos/todos` - Todos agendamentos (admin)
+// Médico de teste (criar durante demo)
+Especialidade: Cardiologista
+CRM: CRM/CE 99999
+```
 
-#### Usuários
-- `PUT /api/usuarios/perfil` - Atualizar perfil
-- `GET /api/usuarios` - Listar usuários (admin)
-- `DELETE /api/usuarios/perfil` - Desativar conta
+---
 
-## 🔒 Segurança
-- Senhas hasheadas com bcrypt
+## 🚨 PONTOS CHAVE PARA DESTACAR
+
+### 🔒 **Segurança**
 - Autenticação JWT
-- Proteção de rotas sensíveis
-- Validação de dados de entrada
-- CORS configurado
+- Hash de senhas com bcrypt
+- Middleware de proteção de rotas
+- Validação de permissões
 
-## 🎯 Próximas Funcionalidades
-- [ ] Dashboard administrativo
-- [ ] Sistema de notificações
-- [ ] Confirmação de agendamentos por médicos
-- [ ] Relatórios e estatísticas
-- [ ] Integração com frontend
-- [ ] Sistema de lembretes
+### ⚡ **Funcionalidades**
+- Sistema completo de agendamentos
+- Gestão de múltiplos tipos de usuário
+- Verificação de conflitos de horário
+- API RESTful bem estruturada
 
+### 🏗️ **Arquitetura**
+- Padrão MVC
+- Código modular e escalável
+- Tratamento de erros robusto
+- Preparado para integração com frontend
+
+---
+
+## 📞 SUPORTE DURANTE A APRESENTAÇÃO
+
+### Comandos de Emergência:
+```bash
+# Se der erro de porta
+npx kill-port 5000
+
+# Se der erro de MongoDB
+# Verificar string de conexão no .env
+
+# Recriar dados de teste
+node scripts/seedAdmin.js
+```
+
+### Troubleshooting Rápido:
+- **Token inválido:** Fazer login novamente
+- **Horário ocupado:** Escolher outro horário
+- **Erro 403:** Tentar acessar rota sem permissão
+- **Erro 404:** Verificar ID do recurso

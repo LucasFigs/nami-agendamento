@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/authService';
 import './PreCadastro.css';
 
 const PreCadastro = () => {
@@ -13,6 +14,7 @@ const PreCadastro = () => {
     confirmarSenha: ''
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (field, value) => {
@@ -20,21 +22,22 @@ const PreCadastro = () => {
       ...prev,
       [field]: value
     }));
+    setError('');
   };
 
   const validateForm = () => {
-    if (!formData.nome || !formData.matricula || !formData.email || !formData.telefone || !formData.senha) {
-      alert('Por favor, preencha todos os campos obrigatórios');
+    if (!formData.nome || !formData.email || !formData.telefone || !formData.senha || !formData.matricula) {
+      setError('Por favor, preencha todos os campos obrigatórios');
       return false;
     }
 
     if (formData.senha !== formData.confirmarSenha) {
-      alert('As senhas não coincidem');
+      setError('As senhas não coincidem');
       return false;
     }
 
     if (formData.senha.length < 6) {
-      alert('A senha deve ter pelo menos 6 caracteres');
+      setError('A senha deve ter pelo menos 6 caracteres');
       return false;
     }
 
@@ -45,17 +48,33 @@ const PreCadastro = () => {
     if (!validateForm()) return;
 
     setLoading(true);
+    setError('');
+
     try {
-      // Simulação de cadastro
-      setTimeout(() => {
-        setLoading(false);
+      // Preparar dados para o backend - CORRIGIDO conforme o backend
+      const userData = {
+        nome: formData.nome,
+        email: formData.email,
+        telefone: formData.telefone,
+        senha: formData.senha,
+        matricula: formData.matricula, // Mantém como matricula
+        tipo: 'paciente' // Adiciona tipo explicitamente
+      };
+
+      // Remove dataNascimento pois não está no modelo do backend
+      const result = await authService.registerPaciente(userData);
+      
+      if (result.success) {
         alert('🎉 Cadastro realizado com sucesso!');
         navigate('/login');
-      }, 1500);
+      } else {
+        setError(result.message || 'Falha no cadastro. Tente novamente.');
+      }
       
     } catch (error) {
+      setError(error.message || 'Falha no cadastro. Tente novamente.');
+    } finally {
       setLoading(false);
-      alert('Falha no cadastro. Tente novamente.');
     }
   };
 
@@ -78,6 +97,20 @@ const PreCadastro = () => {
           <h1 className="title">Criar Nova Conta</h1>
           <p className="subtitle">Preencha seus dados para se cadastrar no sistema</p>
           
+          {error && (
+            <div className="alert-error" style={{
+              background: '#fee',
+              border: '1px solid #fcc',
+              color: '#c33',
+              padding: '12px',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              textAlign: 'center'
+            }}>
+              {error}
+            </div>
+          )}
+
           <div className="form-grid">
             <div className="input-group">
               <label className="input-label">Nome Completo *</label>
@@ -100,7 +133,8 @@ const PreCadastro = () => {
               />
             </div>
 
-            <div className="input-group">
+            {/* REMOVIDO dataNascimento pois não está no modelo do backend */}
+            {/* <div className="input-group">
               <label className="input-label">Data de Nascimento *</label>
               <input
                 className="input"
@@ -108,7 +142,7 @@ const PreCadastro = () => {
                 onChange={(e) => handleChange('dataNascimento', e.target.value)}
                 type="date"
               />
-            </div>
+            </div> */}
 
             <div className="input-group">
               <label className="input-label">Email *</label>

@@ -1,49 +1,76 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/authService';
+import { agendamentoService } from '../services/agendamentoService';
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const [userName, setUserName] = useState('Paciente');
+  const [user, setUser] = useState(null);
   const [proximosAgendamentos, setProximosAgendamentos] = useState([]);
+  const [estatisticas, setEstatisticas] = useState({
+    consultasHoje: 0,
+    proximaConsulta: 'Nenhuma',
+    totalRealizadas: 0,
+    totalFaltas: 0
+  });
+  const [loading, setLoading] = useState(true);
   const [activeMenu, setActiveMenu] = useState('home');
   const navigate = useNavigate();
-
-  const mockAgendamentos = [
-    {
-      id: 1,
-      data: '2024-01-15',
-      horario: '14:00',
-      medico: 'Dr. João Silva',
-      especialidade: 'Cardiologia',
-      status: 'Confirmado',
-      local: 'Consultório A - Bloco Z'
-    },
-    {
-      id: 2,
-      data: '2024-01-20',
-      horario: '10:30',
-      medico: 'Dra. Maria Santos',
-      especialidade: 'Dermatologia',
-      status: 'Agendado',
-      local: 'Consultório B - Bloco Y'
-    }
-  ];
-
-  const estatisticas = {
-    consultasHoje: 2,
-    proximaConsulta: '15/01/2024 - 14:00',
-    totalRealizadas: 12,
-    totalFaltas: 1
-  };
 
   useEffect(() => {
     loadDashboardData();
   }, []);
 
   const loadDashboardData = async () => {
-    // TODO: Integrar com API
-    setProximosAgendamentos(mockAgendamentos);
-    setUserName('Leandro Soares');
+    try {
+      setLoading(true);
+      
+      // Carregar dados do usuário
+      const userData = authService.getCurrentUser();
+      setUser(userData);
+
+      // Carregar agendamentos
+      const agendamentos = await agendamentoService.getAgendamentosPaciente();
+      setProximosAgendamentos(agendamentos.slice(0, 3)); // Mostrar apenas 3 próximos
+
+      // Calcular estatísticas
+      calcularEstatisticas(agendamentos);
+      
+    } catch (error) {
+      console.error('Erro ao carregar dashboard:', error);
+      alert('Erro ao carregar dados do dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calcularEstatisticas = (agendamentos) => {
+    const hoje = new Date().toISOString().split('T')[0];
+    
+    const consultasHoje = agendamentos.filter(ag => 
+      ag.data.split('T')[0] === hoje && ag.status === 'agendado'
+    ).length;
+
+    const proxima = agendamentos
+      .filter(ag => new Date(ag.data) > new Date() && ag.status === 'agendado')
+      .sort((a, b) => new Date(a.data) - new Date(b.data))[0];
+
+    const totalRealizadas = agendamentos.filter(ag => 
+      ag.status === 'realizado'
+    ).length;
+
+    const totalFaltas = agendamentos.filter(ag => 
+      ag.status === 'cancelado'
+    ).length;
+
+    setEstatisticas({
+      consultasHoje,
+      proximaConsulta: proxima ? 
+        `${new Date(proxima.data).toLocaleDateString('pt-BR')} - ${proxima.horario}` : 
+        'Nenhuma',
+      totalRealizadas,
+      totalFaltas
+    });
   };
 
   const handleAgendarConsulta = () => {
@@ -62,9 +89,15 @@ const Dashboard = () => {
     navigate('/perfil');
   };
 
-  const handleCancelarAgendamento = (id) => {
+  const handleCancelarAgendamento = async (id) => {
     if (window.confirm('Tem certeza que deseja cancelar este agendamento?')) {
-      alert(`Agendamento #${id} cancelado com sucesso!`);
+      try {
+        await agendamentoService.cancelarAgendamento(id);
+        alert('Agendamento cancelado com sucesso!');
+        loadDashboardData(); // Recarregar dados
+      } catch (error) {
+        alert('Erro ao cancelar agendamento: ' + error.message);
+      }
     }
   };
 
@@ -75,13 +108,33 @@ const Dashboard = () => {
 
   const getStatusIcon = (status) => {
     switch (status) {
+      case 'agendado':
       case 'Confirmado': return '✅';
-      case 'Agendado': return '⏰';
-      case 'Cancelado': return '❌';
-      case 'Realizado': return '✅';
+      case 'cancelado': return '❌';
+      case 'realizado': return '✅';
       default: return '📅';
     }
   };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'agendado': return 'Confirmado';
+      case 'cancelado': return 'Cancelado';
+      case 'realizado': return 'Realizado';
+      default: return status;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="dashboard-container">
+        <div className="loading-spinner">
+          <div className="spinner"></div>
+          <p>Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-container">
@@ -94,15 +147,11 @@ const Dashboard = () => {
               <div className="online-indicator"></div>
             </div>
             <div className="user-details">
-              <h1 className="greeting">Olá, {userName}</h1>
+              <h1 className="greeting">Olá, {user?.nome || 'Paciente'}</h1>
               <p className="welcome">Bem-vindo ao NAMI</p>
             </div>
           </div>
           <div className="header-actions">
-            <button className="notification-btn">
-              🔔
-              <span className="notification-badge">3</span>
-            </button>
           </div>
         </div>
       </div>
@@ -150,7 +199,7 @@ const Dashboard = () => {
           {proximosAgendamentos.length > 0 ? (
             <div className="agendamentos-list">
               {proximosAgendamentos.map((agendamento) => (
-                <div key={agendamento.id} className="agendamento-card">
+                <div key={agendamento._id} className="agendamento-card">
                   <div className="agendamento-header">
                     <div className="agendamento-date">
                       <span className="date-badge">
@@ -159,26 +208,25 @@ const Dashboard = () => {
                       <span className="time">{agendamento.horario}</span>
                     </div>
                     <div className={`status-badge ${agendamento.status.toLowerCase()}`}>
-                      {getStatusIcon(agendamento.status)} {agendamento.status}
+                      {getStatusIcon(agendamento.status)} {getStatusText(agendamento.status)}
                     </div>
                   </div>
                   
                   <div className="agendamento-info">
-                    <h4 className="medico-name">{agendamento.medico}</h4>
-                    <p className="especialidade">{agendamento.especialidade}</p>
-                    <p className="local">📍 {agendamento.local}</p>
+                    <h4 className="medico-name">{agendamento.medico?.nome || 'Médico'}</h4>
+                    <p className="especialidade">{agendamento.medico?.especialidade || 'Especialidade'}</p>
+                    <p className="local">📍 {agendamento.tipoConsulta === 'telemedicina' ? 'Consulta Online' : 'Consultório'}</p>
                   </div>
                   
                   <div className="agendamento-actions">
-                    <button className="action-btn secondary">
-                      📞 Lembrar
-                    </button>
-                    <button 
-                      className="action-btn danger"
-                      onClick={() => handleCancelarAgendamento(agendamento.id)}
-                    >
-                      ❌ Cancelar
-                    </button>
+                    {agendamento.status === 'agendado' && (
+                      <button 
+                        className="action-btn danger"
+                        onClick={() => handleCancelarAgendamento(agendamento._id)}
+                      >
+                        ❌ Cancelar
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -234,13 +282,15 @@ const Dashboard = () => {
         </div>
 
         {/* Lembrete */}
-        <div className="notification-banner">
-          <div className="notification-icon">🔔</div>
-          <div className="notification-content">
-            <strong>Lembrete:</strong> Sua consulta com Dr. João Silva é amanhã às 14:00
+        {estatisticas.proximaConsulta !== 'Nenhuma' && (
+          <div className="notification-banner">
+            <div className="notification-icon">🔔</div>
+            <div className="notification-content">
+              <strong>Lembrete:</strong> Sua próxima consulta é {estatisticas.proximaConsulta}
+            </div>
+            <button className="notification-action">OK</button>
           </div>
-          <button className="notification-action">OK</button>
-        </div>
+        )}
       </div>
 
       {/* Menu Inferior */}

@@ -1,49 +1,53 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/authService';
 import './LoginMedicoAdmin.css';
 
 const LoginMedicoAdmin = () => {
-  const [matricula, setMatricula] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [forgotMatricula, setForgotMatricula] = useState('');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async () => {
-    if (!matricula || !password) {
+    if (!email || !password) {
       alert('Por favor, preencha todos os campos');
       return;
     }
 
     setLoading(true);
+    setError('');
+
     try {
-      // Simulação de login médico
-      setTimeout(() => {
-        setLoading(false);
-        navigate('/dashboard-medico');
-      }, 1500);
+      const result = await authService.loginMedicoAdmin(email, password);
       
+      if (result.user) {
+        navigate('/dashboard-medico');
+      }
     } catch (error) {
+      setError(error.message || 'Falha no login. Verifique suas credenciais.');
+    } finally {
       setLoading(false);
-      alert('Falha no login. Verifique suas credenciais.');
     }
   };
 
   const handleForgotPassword = async () => {
-    if (!forgotMatricula) {
-      alert('Por favor, informe sua matrícula');
+    if (!forgotEmail) {
+      alert('Por favor, informe seu email');
       return;
     }
 
     setLoading(true);
     try {
-      // Simulação de envio de email
+      // Simulação de envio de email (implementar depois)
       setTimeout(() => {
         setLoading(false);
-        alert(`Email de redefinição enviado para a matrícula: ${forgotMatricula}`);
+        alert(`Email de redefinição enviado para: ${forgotEmail}`);
         setShowForgotPassword(false);
-        setForgotMatricula('');
+        setForgotEmail('');
       }, 1500);
       
     } catch (error) {
@@ -70,13 +74,13 @@ const LoginMedicoAdmin = () => {
             <div className="modal-overlay">
               <div className="modal-content">
                 <h3>Redefinir Senha</h3>
-                <p>Informe sua matrícula para receber as instruções de redefinição:</p>
+                <p>Informe seu email para receber as instruções de redefinição:</p>
                 <input
                   className="input"
-                  placeholder="Sua matrícula UNIFOR"
-                  value={forgotMatricula}
-                  onChange={(e) => setForgotMatricula(e.target.value)}
-                  type="text"
+                  placeholder="Seu email cadastrado"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  type="email"
                 />
                 <div className="modal-buttons">
                   <button 
@@ -101,14 +105,28 @@ const LoginMedicoAdmin = () => {
           <div className="form-container">
             <h2 className="form-title">Acesso Médico/Admin</h2>
             
+            {error && (
+              <div className="alert-error" style={{
+                background: '#fee',
+                border: '1px solid #fcc',
+                color: '#c33',
+                padding: '12px',
+                borderRadius: '8px',
+                marginBottom: '20px',
+                textAlign: 'center'
+              }}>
+                {error}
+              </div>
+            )}
+
             <div className="input-group">
-              <label className="input-label">Matrícula UNIFOR</label>
+              <label className="input-label">Email</label>
               <input
                 className="input"
-                placeholder="Sua matrícula UNIFOR"
-                value={matricula}
-                onChange={(e) => setMatricula(e.target.value)}
-                type="text"
+                placeholder="seu.email@unifor.br"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                type="email"
               />
             </div>
 
@@ -139,7 +157,6 @@ const LoginMedicoAdmin = () => {
             </button>
 
             <div className="links-container">
-              {/* BOTÃO CORRIGIDO - COM onClick FUNCIONAL */}
               <button 
                 className="link-button"
                 onClick={() => setShowForgotPassword(true)}
