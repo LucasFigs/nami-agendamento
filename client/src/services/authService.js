@@ -18,13 +18,20 @@ export const authService = {
   // Login de médico/admin
   async loginMedicoAdmin(email, senha) {
     try {
+      console.log('🔄 AuthService: Tentando login médico/admin', { email });
       const response = await api.post('/auth/login', { email, senha });
+      console.log('✅ AuthService: Resposta completa', response);
+      console.log('✅ AuthService: Dados retornados', response.data);
+
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.usuario)); // Mudou para 'usuario'
+        localStorage.setItem('user', JSON.stringify(response.data.usuario));
+        console.log('✅ AuthService: Token e usuário salvos no localStorage');
       }
       return response.data;
     } catch (error) {
+      console.error('❌ AuthService: Erro no login', error);
+      console.error('❌ AuthService: Detalhes do erro', error.response?.data);
       throw error.response?.data || { message: 'Erro ao fazer login' };
     }
   },

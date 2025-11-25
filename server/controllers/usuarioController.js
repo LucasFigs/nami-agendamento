@@ -257,3 +257,200 @@ exports.alterarSenha = async (req, res) => {
         });
     }
 };
+
+// @desc    Listar todos os usuários (apenas admin)
+// @route   GET /api/usuarios/todos
+// @access  Private/Admin
+exports.getTodosUsuarios = async (req, res) => {
+    try {
+        const usuarios = await Usuario.find()
+            .select('-senha')
+            .sort({ createdAt: -1 });
+
+        res.json({
+            success: true,
+            count: usuarios.length,
+            data: usuarios
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao listar usuários',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Ativar/desativar usuário
+// @route   PUT /api/usuarios/:id/toggle-status
+// @access  Private/Admin
+exports.toggleUsuarioStatus = async (req, res) => {
+    try {
+        const usuarioId = req.params.id;
+        
+        const usuario = await Usuario.findById(usuarioId);
+        
+        if (!usuario) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuário não encontrado'
+            });
+        }
+
+        // Não permitir desativar a si mesmo
+        if (usuarioId === req.usuario.id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Não é possível desativar sua própria conta'
+            });
+        }
+
+        usuario.ativo = !usuario.ativo;
+        await usuario.save();
+
+        res.json({
+            success: true,
+            message: `Usuário ${usuario.ativo ? 'ativado' : 'desativado'} com sucesso`,
+            data: usuario
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao alterar status do usuário',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Resetar senha do usuário
+// @route   PUT /api/usuarios/:id/resetar-senha
+// @access  Private/Admin
+exports.resetarSenha = async (req, res) => {
+    try {
+        const usuarioId = req.params.id;
+        
+        const usuario = await Usuario.findById(usuarioId);
+        
+        if (!usuario) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuário não encontrado'
+            });
+        }
+
+        // Resetar para senha padrão
+        const senhaPadrao = '123456'; // Senha padrão
+        usuario.senha = senhaPadrao;
+        await usuario.save();
+
+        res.json({
+            success: true,
+            message: 'Senha resetada com sucesso. Nova senha: 123456',
+            data: { id: usuario._id }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao resetar senha',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Criar administrador
+// @route   POST /api/usuarios/admin
+// @access  Private/Admin
+exports.criarAdmin = async (req, res) => {
+    try {
+        const { nome, email, telefone, senha } = req.body;
+
+        // Verificar se usuário já existe
+        const usuarioExiste = await Usuario.findOne({ email });
+        if (usuarioExiste) {
+            return res.status(400).json({
+                success: false,
+                message: 'Usuário já existe com este email'
+            });
+        }
+
+        // Criar admin
+        const admin = await Usuario.create({
+            nome,
+            email,
+            telefone,
+            senha,
+            tipo: 'admin'
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Administrador criado com sucesso',
+            data: {
+                id: admin._id,
+                nome: admin.nome,
+                email: admin.email,
+                tipo: admin.tipo
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao criar administrador',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Criar administrador
+// @route   POST /api/usuarios/admin
+// @access  Private/Admin
+exports.criarAdmin = async (req, res) => {
+    try {
+        const { nome, email, telefone, senha } = req.body;
+
+        console.log('📝 Tentando criar admin:', { nome, email });
+
+        // Verificar se usuário já existe
+        const usuarioExiste = await Usuario.findOne({ email });
+        if (usuarioExiste) {
+            return res.status(400).json({
+                success: false,
+                message: 'Usuário já existe com este email'
+            });
+        }
+
+        // Criar admin
+        const admin = await Usuario.create({
+            nome,
+            email,
+            telefone,
+            senha,
+            tipo: 'admin'
+        });
+
+        console.log('✅ Admin criado com sucesso:', admin._id);
+
+        res.status(201).json({
+            success: true,
+            message: 'Administrador criado com sucesso',
+            data: {
+                id: admin._id,
+                nome: admin.nome,
+                email: admin.email,
+                tipo: admin.tipo
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Erro ao criar administrador:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao criar administrador',
+            error: error.message
+        });
+    }
+};

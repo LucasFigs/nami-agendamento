@@ -22,10 +22,13 @@ async getAgendamentosMedico() {
 },
 
 // Buscar todos os agendamentos (apenas admin)
+// No client/src/services/agendamentoService.js, verifique se a função existe:
+
+// Buscar todos os agendamentos (apenas admin)
 async getTodosAgendamentos() {
   try {
     const response = await api.get('/agendamentos/todos');
-    return response.data;
+    return response.data; // ← Deve retornar array diretamente
   } catch (error) {
     throw error.response?.data || { message: 'Erro ao buscar todos os agendamentos' };
   }

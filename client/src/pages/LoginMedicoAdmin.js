@@ -22,12 +22,34 @@ const LoginMedicoAdmin = () => {
     setError('');
 
     try {
+      console.log('🔐 Tentando login médico/admin:', email);
+
       const result = await authService.loginMedicoAdmin(email, password);
-      
-      if (result.user) {
-        navigate('/dashboard-medico');
+      console.log('✅ Resultado do login:', result);
+
+      // CORREÇÃO: Mudou de result.user para result.usuario
+      if (result.usuario) {
+        console.log('👤 Usuário logado:', result.usuario);
+        
+        // ✅ CORREÇÃO: Redirecionar baseado no tipo de usuário
+        switch (result.usuario.tipo) {
+          case 'admin':
+            console.log('🛠️ Redirecionando para Painel Admin');
+            navigate('/admin');
+            break;
+          case 'medico':
+            console.log('👨‍⚕️ Redirecionando para Dashboard Médico');
+            navigate('/dashboard-medico');
+            break;
+          default:
+            console.log('🔁 Redirecionando padrão para Dashboard Médico');
+            navigate('/dashboard-medico');
+        }
+      } else {
+        setError('Resposta inválida do servidor');
       }
     } catch (error) {
+      console.error('❌ Erro no login:', error);
       setError(error.message || 'Falha no login. Verifique suas credenciais.');
     } finally {
       setLoading(false);
@@ -49,7 +71,7 @@ const LoginMedicoAdmin = () => {
         setShowForgotPassword(false);
         setForgotEmail('');
       }, 1500);
-      
+
     } catch (error) {
       setLoading(false);
       alert('Erro ao enviar email de redefinição.');
@@ -83,14 +105,14 @@ const LoginMedicoAdmin = () => {
                   type="email"
                 />
                 <div className="modal-buttons">
-                  <button 
+                  <button
                     className="modal-button primary"
                     onClick={handleForgotPassword}
                     disabled={loading}
                   >
                     {loading ? 'Enviando...' : 'Enviar Instruções'}
                   </button>
-                  <button 
+                  <button
                     className="modal-button secondary"
                     onClick={() => setShowForgotPassword(false)}
                   >
@@ -104,7 +126,7 @@ const LoginMedicoAdmin = () => {
           {/* Formulário de Login Médico/Admin */}
           <div className="form-container">
             <h2 className="form-title">Acesso Médico/Admin</h2>
-            
+
             {error && (
               <div className="alert-error" style={{
                 background: '#fee',
@@ -141,7 +163,7 @@ const LoginMedicoAdmin = () => {
               />
             </div>
 
-            <button 
+            <button
               className={`login-button ${loading ? 'button-disabled' : ''}`}
               onClick={handleLogin}
               disabled={loading}
@@ -157,22 +179,22 @@ const LoginMedicoAdmin = () => {
             </button>
 
             <div className="links-container">
-              <button 
+              <button
                 className="link-button"
                 onClick={() => setShowForgotPassword(true)}
               >
-                 Esqueci minha senha
+                Esqueci minha senha
               </button>
-              
+
               <div className="divider">
                 <span>ou</span>
               </div>
 
-              <button 
+              <button
                 className="secondary-button"
                 onClick={() => navigate('/login')}
               >
-                 Área do Paciente
+                Área do Paciente
               </button>
             </div>
           </div>
@@ -180,7 +202,7 @@ const LoginMedicoAdmin = () => {
           {/* Footer */}
           <div className="login-footer">
             <p>Sistema desenvolvido para a UNIFOR - Versão Médica/Admin</p>
-            <p style={{fontSize: '11px', opacity: 0.7, marginTop: '5px'}}>
+            <p style={{ fontSize: '11px', opacity: 0.7, marginTop: '5px' }}>
               Acesso restrito a profissionais cadastrados pela administração
             </p>
           </div>

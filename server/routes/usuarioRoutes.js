@@ -6,7 +6,11 @@ const {
     desativarConta,
     getHistoricoConsultas,
     getMeusDados,
-    alterarSenha
+    alterarSenha,
+    getTodosUsuarios,      
+    criarAdmin,            
+    toggleUsuarioStatus,   
+    resetarSenha
 } = require('../controllers/usuarioController');
 
 const proteger = require('../middleware/authMiddleware');
@@ -21,7 +25,13 @@ router.get('/historico-consultas', proteger, getHistoricoConsultas);
 router.get('/meus-dados', proteger, getMeusDados);
 router.put('/alterar-senha', proteger, alterarSenha);
 
-// Rotas admin (apenas admin)
+// ✅ NOVAS ROTAS ADMIN (apenas admin)
+router.get('/todos', proteger, adminOnly, getTodosUsuarios);
+router.post('/admin', proteger, adminOnly, criarAdmin);
+router.put('/:id/toggle-status', proteger, adminOnly, toggleUsuarioStatus);
+router.put('/:id/resetar-senha', proteger, adminOnly, resetarSenha);
+
+// Rotas admin (apenas admin) - mantendo as existentes
 router.get('/', proteger, adminOnly, listarUsuarios);
 router.get('/:id', proteger, adminOnly, buscarUsuarioPorId);
 
