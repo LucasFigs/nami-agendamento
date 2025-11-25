@@ -19,7 +19,7 @@ const AdminDashboard = () => {
   });
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState(''); // 'medico', 'admin', 'consulta'
+  const [modalType, setModalType] = useState('');
   const [selectedAgendamento, setSelectedAgendamento] = useState(null);
   const [estatisticasStatus, setEstatisticasStatus] = useState({});
 
@@ -47,6 +47,13 @@ const AdminDashboard = () => {
     email: '',
     telefone: '',
     senha: ''
+  });
+
+  const [relatorios, setRelatorios] = useState({
+    consultasPorMes: [],
+    medicosMaisSolicitados: [],
+    horariosPopulares: [],
+    taxas: {}
   });
 
   const navigate = useNavigate();
@@ -94,20 +101,17 @@ const AdminDashboard = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-
-      // ✅ BUSCAR ESTATÍSTICAS REAIS
       const estatisticasReais = await usuarioService.getEstatisticas();
 
       setEstatisticas({
         totalUsuarios: estatisticasReais.usuarios.total,
-        totalMedicos: estatisticasReais.medicos.ativos, // Mostrar apenas médicos ativos
+        totalMedicos: estatisticasReais.medicos.ativos,
         totalConsultas: estatisticasReais.consultas.total,
         consultasHoje: estatisticasReais.consultas.hoje
       });
 
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error);
-      // Fallback para dados fictícios em caso de erro
       setEstatisticas({
         totalUsuarios: 0,
         totalMedicos: 0,
@@ -130,12 +134,10 @@ const AdminDashboard = () => {
 
   const loadUsuarios = async () => {
     try {
-      // ✅ CORREÇÃO: Usar o endpoint real
       const usuariosData = await usuarioService.getTodosUsuarios();
       setUsuarios(usuariosData);
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
-      // Fallback para dados mock se o endpoint não existir
       setUsuarios([
         { _id: '1', nome: 'João Silva', email: 'joao@unifor.br', tipo: 'paciente', ativo: true },
         { _id: '2', nome: 'Dra. Maria Santos', email: 'maria@nami.com', tipo: 'medico', ativo: true },
@@ -148,43 +150,28 @@ const AdminDashboard = () => {
     try {
       const agendamentosData = await agendamentoService.getTodosAgendamentos();
 
-      // ✅ CORREÇÃO: Garantir que seja um array
-      console.log('Dados retornados do agendamentoService:', agendamentosData);
-
       if (Array.isArray(agendamentosData)) {
         setAgendamentos(agendamentosData);
       } else if (agendamentosData && Array.isArray(agendamentosData.data)) {
-        // Se vier em formato { success: true, data: [...] }
         setAgendamentos(agendamentosData.data);
       } else {
         console.warn('Dados de agendamentos não são um array:', agendamentosData);
-        setAgendamentos([]); // Fallback para array vazio
+        setAgendamentos([]);
       }
 
     } catch (error) {
       console.error('Erro ao carregar agendamentos:', error);
-      setAgendamentos([]); // Fallback para array vazio em caso de erro
+      setAgendamentos([]);
     }
   };
-
-  const [relatorios, setRelatorios] = useState({
-    consultasPorMes: [],
-    medicosMaisSolicitados: [],
-    horariosPopulares: [],
-    taxas: {}
-  });
 
   const loadRelatorios = async (periodo = '30dias') => {
     try {
       setLoading(true);
-
-      // ✅ BUSCAR RELATÓRIOS REAIS
       const relatoriosData = await agendamentoService.getRelatorios(periodo);
       console.log('Relatórios carregados:', relatoriosData);
 
       setRelatorios(relatoriosData);
-
-      // ✅ BUSCAR ESTATÍSTICAS DE STATUS ALTERNATIVAS
       await loadEstatisticasStatus(periodo);
 
     } catch (error) {
@@ -195,7 +182,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // ✅ Carregar estatísticas de status alternativas
   const loadEstatisticasStatus = async (periodo = '30dias') => {
     try {
       const dados = await agendamentoService.getEstatisticasStatus(periodo);
@@ -206,8 +192,215 @@ const AdminDashboard = () => {
     }
   };
 
-  // ✅ Função para renderizar gráfico de barras simples
-  const renderBarChart = (data, title, color = '#007bff') => {
+  // Função para criar médico
+  const handleCreateMedico = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      await medicoService.criarMedicoCompleto(formMedico);
+      alert('✅ Médico cadastrado com sucesso!');
+
+      setShowModal(false);
+      setFormMedico({
+        nome: '', email: '', telefone: '', senha: '', especialidade: '', crm: '', consultorio: '',
+        diasAtendimento: [
+          { diaSemana: 'segunda', horarios: ['08:00', '09:00', '10:00', '14:00', '15:00'] },
+          { diaSemana: 'terca', horarios: ['08:00', '09:00', '10:00', '14:00', '15:00'] },
+          { diaSemana: 'quarta', horarios: ['08:00', '09:00', '10:00', '14:00', '15:00'] },
+          { diaSemana: 'quinta', horarios: ['08:00', '09:00', '10:00', '14:00', '15:00'] },
+          { diaSemana: 'sexta', horarios: ['08:00', '09:00', '10:00', '14:00', '15:00'] }
+        ]
+      });
+
+      loadMedicos();
+    } catch (error) {
+      alert('❌ Erro ao criar médico: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Função para criar admin
+  const handleCreateAdmin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      await usuarioService.criarAdmin(formAdmin);
+      alert('✅ Admin cadastrado com sucesso!');
+
+      setShowModal(false);
+      setFormAdmin({ nome: '', email: '', telefone: '', senha: '' });
+      loadUsuarios();
+    } catch (error) {
+      alert('❌ Erro ao criar admin: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Função para ativar/desativar usuário
+  const handleToggleUsuarioStatus = async (usuarioId, ativoAtual) => {
+    if (window.confirm(`Deseja ${ativoAtual ? 'desativar' : 'ativar'} este usuário?`)) {
+      try {
+        await usuarioService.toggleUsuarioStatus(usuarioId);
+        alert(`✅ Usuário ${ativoAtual ? 'desativado' : 'ativado'} com sucesso!`);
+        loadUsuarios();
+      } catch (error) {
+        alert('❌ Erro ao alterar status: ' + error.message);
+      }
+    }
+  };
+
+  // Função para ativar/desativar médico
+  const handleToggleMedicoStatus = async (medicoId, ativoAtual) => {
+    if (window.confirm(`Deseja ${ativoAtual ? 'desativar' : 'ativar'} este médico?`)) {
+      try {
+        await medicoService.toggleMedicoStatus(medicoId);
+        alert(`✅ Médico ${ativoAtual ? 'desativado' : 'ativado'} com sucesso!`);
+        loadMedicos();
+      } catch (error) {
+        alert('❌ Erro ao alterar status: ' + error.message);
+      }
+    }
+  };
+
+  // Função para resetar senha
+  const handleResetarSenha = async (usuarioId) => {
+    if (window.confirm('Deseja resetar a senha deste usuário para "123456"?')) {
+      try {
+        await usuarioService.resetarSenha(usuarioId);
+        alert('✅ Senha resetada com sucesso! Nova senha: 123456');
+        loadUsuarios();
+      } catch (error) {
+        alert('❌ Erro ao resetar senha: ' + error.message);
+      }
+    }
+  };
+
+  // Função para editar médico
+  const handleEditarMedico = (medico) => {
+    setFormMedico({
+      nome: medico.usuario?.nome || '',
+      email: medico.usuario?.email || '',
+      telefone: medico.usuario?.telefone || '',
+      senha: '',
+      especialidade: medico.especialidade || '',
+      crm: medico.crm || '',
+      consultorio: medico.consultorio || '',
+      diasAtendimento: medico.diasAtendimento || [
+        { diaSemana: 'segunda', horarios: [] },
+        { diaSemana: 'terca', horarios: [] },
+        { diaSemana: 'quarta', horarios: [] },
+        { diaSemana: 'quinta', horarios: [] },
+        { diaSemana: 'sexta', horarios: [] },
+        { diaSemana: 'sabado', horarios: [] }
+      ]
+    });
+
+    setModalType('editar-medico');
+    setShowModal(true);
+    setSelectedAgendamento(medico._id);
+  };
+
+  // Função para atualizar médico
+  const handleUpdateMedico = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      await medicoService.atualizarMedico(selectedAgendamento, formMedico);
+      alert('✅ Médico atualizado com sucesso!');
+
+      setShowModal(false);
+      setFormMedico({
+        nome: '', email: '', telefone: '', senha: '', especialidade: '', crm: '', consultorio: '',
+        diasAtendimento: [
+          { diaSemana: 'segunda', horarios: [] },
+          { diaSemana: 'terca', horarios: [] },
+          { diaSemana: 'quarta', horarios: [] },
+          { diaSemana: 'quinta', horarios: [] },
+          { diaSemana: 'sexta', horarios: [] },
+          { diaSemana: 'sabado', horarios: [] }
+        ]
+      });
+      setSelectedAgendamento(null);
+
+      loadMedicos();
+    } catch (error) {
+      alert('❌ Erro ao atualizar médico: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Função para editar usuário
+  const handleEditarUsuario = (usuario) => {
+    setFormAdmin({
+      nome: usuario.nome || '',
+      email: usuario.email || '',
+      telefone: usuario.telefone || '',
+      senha: ''
+    });
+    setModalType('editar-usuario');
+    setShowModal(true);
+    setSelectedAgendamento(usuario._id);
+  };
+
+  // Função para atualizar usuário
+  const handleUpdateUsuario = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      await usuarioService.atualizarUsuario(selectedAgendamento, formAdmin);
+      alert('✅ Usuário atualizado com sucesso!');
+
+      setShowModal(false);
+      setFormAdmin({ nome: '', email: '', telefone: '', senha: '' });
+      setSelectedAgendamento(null);
+
+      loadUsuarios();
+    } catch (error) {
+      alert('❌ Erro ao atualizar usuário: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Função para ver detalhes da consulta
+  const handleVerDetalhesConsulta = (agendamento) => {
+    setSelectedAgendamento(agendamento);
+    setModalType('detalhes-consulta');
+    setShowModal(true);
+  };
+
+  // Função para cancelar consulta (admin)
+  const handleCancelarConsultaAdmin = async (agendamentoId) => {
+    if (window.confirm('Tem certeza que deseja cancelar esta consulta como administrador?')) {
+      try {
+        await agendamentoService.cancelarAgendamentoAdmin(agendamentoId);
+        alert('✅ Consulta cancelada com sucesso pelo administrador!');
+        loadAgendamentos();
+      } catch (error) {
+        alert('❌ Erro ao cancelar consulta: ' + error.message);
+      }
+    }
+  };
+
+  const openModal = (type) => {
+    setModalType(type);
+    setShowModal(true);
+  };
+
+  // Funções para gráficos
+  const getChartColor = (index) => {
+    const colors = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899'];
+    return colors[index % colors.length];
+  };
+
+  const renderBarChart = (data, title, color = '#2563eb') => {
     if (!data || data.length === 0) {
       return <div className="empty-chart">Nenhum dado disponível</div>;
     }
@@ -241,9 +434,7 @@ const AdminDashboard = () => {
     );
   };
 
-  // ✅ Função SIMPLIFICADA - apenas dados reais
   const renderPieChart = (data, title) => {
-    // Verificar se temos dados válidos
     if (!data || data.length === 0) {
       return (
         <div className="empty-chart">
@@ -264,7 +455,7 @@ const AdminDashboard = () => {
       );
     }
 
-    let currentAngle = 0;
+    let currentAngle = -90;
 
     return (
       <div className="simple-pie-chart">
@@ -275,19 +466,25 @@ const AdminDashboard = () => {
               const value = item.value || item.total || 0;
               const percentage = value / total;
               const angle = percentage * 360;
-              const largeArcFlag = angle > 180 ? 1 : 0;
 
-              // Coordenadas para o segmento do gráfico de pizza
-              const x1 = 75 + 65 * Math.cos(currentAngle * Math.PI / 180);
-              const y1 = 75 + 65 * Math.sin(currentAngle * Math.PI / 180);
-              const x2 = 75 + 65 * Math.cos((currentAngle + angle) * Math.PI / 180);
-              const y2 = 75 + 65 * Math.sin((currentAngle + angle) * Math.PI / 180);
+              const startAngle = currentAngle;
+              const endAngle = currentAngle + angle;
+
+              const startRad = (startAngle * Math.PI) / 180;
+              const endRad = (endAngle * Math.PI) / 180;
+
+              const x1 = 75 + 65 * Math.cos(startRad);
+              const y1 = 75 + 65 * Math.sin(startRad);
+              const x2 = 75 + 65 * Math.cos(endRad);
+              const y2 = 75 + 65 * Math.sin(endRad);
+
+              const largeArcFlag = angle > 180 ? 1 : 0;
 
               const pathData = [
                 `M 75 75`,
                 `L ${x1} ${y1}`,
                 `A 65 65 0 ${largeArcFlag} 1 ${x2} ${y2}`,
-                `Z`
+                'Z'
               ].join(' ');
 
               const segment = (
@@ -303,7 +500,6 @@ const AdminDashboard = () => {
               currentAngle += angle;
               return segment;
             })}
-            <circle cx="75" cy="75" r="30" fill="white" />
           </svg>
         </div>
         <div className="pie-legend">
@@ -327,13 +523,6 @@ const AdminDashboard = () => {
     );
   };
 
-  // ✅ Função para cores dos gráficos
-  const getChartColor = (index) => {
-    const colors = ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#20c997', '#fd7e14', '#e83e8c'];
-    return colors[index % colors.length];
-  };
-
-  // ✅ Função para renderizar métricas
   const renderMetricCard = (title, value, subtitle, color = 'primary') => {
     return (
       <div className={`metric-card ${color}`}>
@@ -344,361 +533,430 @@ const AdminDashboard = () => {
     );
   };
 
-  // ✅ CORREÇÃO: Função para criar médico
-  const handleCreateMedico = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      await medicoService.criarMedicoCompleto(formMedico);
-      alert('✅ Médico cadastrado com sucesso!');
-
-      setShowModal(false);
-      setFormMedico({
-        nome: '', email: '', telefone: '', senha: '', especialidade: '', crm: '', consultorio: '',
-        diasAtendimento: [
-          { diaSemana: 'segunda', horarios: ['08:00', '09:00', '10:00', '14:00', '15:00'] },
-          { diaSemana: 'terca', horarios: ['08:00', '09:00', '10:00', '14:00', '15:00'] },
-          { diaSemana: 'quarta', horarios: ['08:00', '09:00', '10:00', '14:00', '15:00'] },
-          { diaSemana: 'quinta', horarios: ['08:00', '09:00', '10:00', '14:00', '15:00'] },
-          { diaSemana: 'sexta', horarios: ['08:00', '09:00', '10:00', '14:00', '15:00'] }
-        ]
-      });
-
-      loadMedicos();
-    } catch (error) {
-      alert('❌ Erro ao criar médico: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ✅ CORREÇÃO: Função para criar admin
-  const handleCreateAdmin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      await usuarioService.criarAdmin(formAdmin);
-      alert('✅ Admin cadastrado com sucesso!');
-
-      setShowModal(false);
-      setFormAdmin({ nome: '', email: '', telefone: '', senha: '' });
-      loadUsuarios();
-    } catch (error) {
-      alert('❌ Erro ao criar admin: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ✅ CORREÇÃO: Função para ativar/desativar usuário
-  const handleToggleUsuarioStatus = async (usuarioId, ativoAtual) => {
-    if (window.confirm(`Deseja ${ativoAtual ? 'desativar' : 'ativar'} este usuário?`)) {
-      try {
-        await usuarioService.toggleUsuarioStatus(usuarioId);
-        alert(`✅ Usuário ${ativoAtual ? 'desativado' : 'ativado'} com sucesso!`);
-        loadUsuarios();
-      } catch (error) {
-        alert('❌ Erro ao alterar status: ' + error.message);
-      }
-    }
-  };
-
-  // ✅ NOVA FUNÇÃO: Para ativar/desativar médico
-  const handleToggleMedicoStatus = async (medicoId, ativoAtual) => {
-    if (window.confirm(`Deseja ${ativoAtual ? 'desativar' : 'ativar'} este médico?`)) {
-      try {
-        await medicoService.toggleMedicoStatus(medicoId);
-        alert(`✅ Médico ${ativoAtual ? 'desativado' : 'ativado'} com sucesso!`);
-        loadMedicos();
-      } catch (error) {
-        alert('❌ Erro ao alterar status: ' + error.message);
-      }
-    }
-  };
-
-  // ✅ NOVA FUNÇÃO: Para resetar senha
-  const handleResetarSenha = async (usuarioId) => {
-    if (window.confirm('Deseja resetar a senha deste usuário para "123456"?')) {
-      try {
-        await usuarioService.resetarSenha(usuarioId);
-        alert('✅ Senha resetada com sucesso! Nova senha: 123456');
-        loadUsuarios();
-      } catch (error) {
-        alert('❌ Erro ao resetar senha: ' + error.message);
-      }
-    }
-  };
-
-  // ✅ NOVA FUNÇÃO: Para editar médico
-  const handleEditarMedico = (medico) => {
-    // Preencher o formulário com os dados do médico
-    setFormMedico({
-      nome: medico.usuario?.nome || '',
-      email: medico.usuario?.email || '',
-      telefone: medico.usuario?.telefone || '',
-      senha: '', // Senha em branco para não alterar
-      especialidade: medico.especialidade || '',
-      crm: medico.crm || '',
-      consultorio: medico.consultorio || '',
-      diasAtendimento: medico.diasAtendimento || [
-        { diaSemana: 'segunda', horarios: [] },
-        { diaSemana: 'terca', horarios: [] },
-        { diaSemana: 'quarta', horarios: [] },
-        { diaSemana: 'quinta', horarios: [] },
-        { diaSemana: 'sexta', horarios: [] },
-        { diaSemana: 'sabado', horarios: [] }
-      ]
-    });
-
-    setModalType('editar-medico');
-    setShowModal(true);
-    setSelectedAgendamento(medico._id); // Usamos para guardar o ID do médico sendo editado
-  };
-
-  // ✅ NOVA FUNÇÃO: Para atualizar médico
-  const handleUpdateMedico = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      // Implementar endpoint de atualização no backend
-      alert('✅ Médico atualizado com sucesso!');
-
-      setShowModal(false);
-      setFormMedico({
-        nome: '', email: '', telefone: '', senha: '', especialidade: '', crm: '', consultorio: '',
-        diasAtendimento: [
-          { diaSemana: 'segunda', horarios: [] },
-          { diaSemana: 'terca', horarios: [] },
-          { diaSemana: 'quarta', horarios: [] },
-          { diaSemana: 'quinta', horarios: [] },
-          { diaSemana: 'sexta', horarios: [] },
-          { diaSemana: 'sabado', horarios: [] }
-        ]
-      });
-      setSelectedAgendamento(null);
-
-      loadMedicos();
-    } catch (error) {
-      alert('❌ Erro ao atualizar médico: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCancelarAgendamento = async (agendamentoId) => {
-    if (window.confirm('Deseja cancelar este agendamento?')) {
-      try {
-        await agendamentoService.cancelarAgendamento(agendamentoId);
-        alert('Agendamento cancelado com sucesso!');
-        loadAgendamentos();
-      } catch (error) {
-        alert('Erro ao cancelar agendamento: ' + error.message);
-      }
-    }
-  };
-
-  const openModal = (type) => {
-    setModalType(type);
-    setShowModal(true);
-  };
-
   const getStatusColor = (status) => {
     switch (status) {
-      case 'agendado': return '#28a745';
-      case 'cancelado': return '#dc3545';
-      case 'realizado': return '#17a2b8';
-      default: return '#6c757d';
+      case 'agendado': return '#10b981';
+      case 'cancelado': return '#ef4444';
+      case 'realizado': return '#06b6d4';
+      default: return '#64748b';
     }
   };
 
   const getTipoColor = (tipo) => {
     switch (tipo) {
-      case 'admin': return '#dc3545';
-      case 'medico': return '#007bff';
-      case 'paciente': return '#28a745';
-      default: return '#6c757d';
+      case 'admin': return '#ef4444';
+      case 'medico': return '#2563eb';
+      case 'paciente': return '#10b981';
+      default: return '#64748b';
     }
   };
 
-  // ✅ NOVA FUNÇÃO: Para editar usuário
-  const handleEditarUsuario = (usuario) => {
-    setFormAdmin({
-      nome: usuario.nome || '',
-      email: usuario.email || '',
-      telefone: usuario.telefone || '',
-      senha: '' // Senha em branco para não alterar
-    });
-    setModalType('editar-usuario');
-    setShowModal(true);
-    setSelectedAgendamento(usuario._id); // Usamos para guardar o ID do usuário sendo editado
-  };
+  // Novas funções para gráficos melhorados (adicionar antes do return)
+const calculateStatusDistribution = (consultasPorMes) => {
+  if (!consultasPorMes || consultasPorMes.length === 0) return [];
+  
+  let realizadas = 0;
+  let canceladas = 0;
+  let agendadas = 0;
 
-  // ✅ NOVA FUNÇÃO: Para atualizar usuário
-  const handleUpdateUsuario = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  consultasPorMes.forEach(item => {
+    realizadas += Number(item.realizadas) || 0;
+    canceladas += Number(item.canceladas) || 0;
+    agendadas += (Number(item.total) || 0) - realizadas - canceladas;
+  });
 
-    try {
-      // Implementar endpoint de atualização no backend
-      await usuarioService.atualizarUsuario(selectedAgendamento, formAdmin);
-      alert('✅ Usuário atualizado com sucesso!');
+  const dados = [];
+  if (realizadas > 0) dados.push({ label: 'Realizadas', value: realizadas, color: '#10b981' });
+  if (agendadas > 0) dados.push({ label: 'Agendadas', value: agendadas, color: '#3b82f6' });
+  if (canceladas > 0) dados.push({ label: 'Canceladas', value: canceladas, color: '#ef4444' });
 
-      setShowModal(false);
-      setFormAdmin({ nome: '', email: '', telefone: '', senha: '' });
-      setSelectedAgendamento(null);
+  return dados;
+};
 
-      loadUsuarios();
-    } catch (error) {
-      alert('❌ Erro ao atualizar usuário: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+const renderEnhancedBarChart = (data, title) => {
+  if (!data || data.length === 0) {
+    return (
+      <div className="empty-chart">
+        <div className="empty-chart-icon">📊</div>
+        <p>Nenhum dado disponível</p>
+      </div>
+    );
+  }
 
-  // ✅ ADICIONAR estas funções no AdminDashboard.js
+  const maxValue = Math.max(...data.map(item => item.total || 0));
 
-  // Função para ver detalhes da consulta
-  const handleVerDetalhesConsulta = (agendamento) => {
-    // Podemos mostrar um modal com todos os detalhes
-    setSelectedAgendamento(agendamento);
-    setModalType('detalhes-consulta');
-    setShowModal(true);
-  };
+  return (
+    <div className="enhanced-bar-chart">
+      <div className="chart-bars-vertical">
+        {data.map((item, index) => {
+          const percentage = ((item.total || 0) / maxValue) * 100;
+          return (
+            <div key={index} className="bar-vertical-item">
+              <div className="bar-vertical-container">
+                <div
+                  className="bar-vertical-fill"
+                  style={{ height: `${percentage}%` }}
+                >
+                  <div className="bar-value">{item.total || 0}</div>
+                </div>
+              </div>
+              <div className="bar-label">{item.label}</div>
+              <div className="bar-details">
+                <span className="detail-success">✓{item.realizadas || 0}</span>
+                <span className="detail-danger">✗{item.canceladas || 0}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
-  // Função para cancelar consulta (admin)
-  const handleCancelarConsultaAdmin = async (agendamentoId) => {
-    if (window.confirm('Tem certeza que deseja cancelar esta consulta como administrador?')) {
-      try {
-        // ✅ USAR O NOVO ENDPOINT ADMIN
-        await agendamentoService.cancelarAgendamentoAdmin(agendamentoId);
-        alert('✅ Consulta cancelada com sucesso pelo administrador!');
-        loadAgendamentos();
-      } catch (error) {
-        alert('❌ Erro ao cancelar consulta: ' + error.message);
-      }
-    }
-  };
+const renderEnhancedPieChart = (data, title) => {
+  if (!data || data.length === 0) {
+    return (
+      <div className="empty-chart">
+        <div className="empty-chart-icon">📈</div>
+        <p>Nenhum dado disponível</p>
+      </div>
+    );
+  }
+
+  const total = data.reduce((sum, item) => sum + (item.value || 0), 0);
+  
+  if (total === 0) {
+    return (
+      <div className="empty-chart">
+        <div className="empty-chart-icon">📈</div>
+        <p>Dados insuficientes</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="enhanced-pie-chart">
+      <div className="pie-visual">
+        <div className="pie-chart-svg">
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            {data.map((item, index, array) => {
+              const percentage = (item.value / total) * 100;
+              const offset = array.slice(0, index).reduce((sum, i) => sum + (i.value / total) * 360, 0);
+              const angle = (item.value / total) * 360;
+              
+              const startAngle = offset - 90;
+              const endAngle = startAngle + angle;
+              
+              const startRad = (startAngle * Math.PI) / 180;
+              const endRad = (endAngle * Math.PI) / 180;
+              
+              const x1 = 60 + 50 * Math.cos(startRad);
+              const y1 = 60 + 50 * Math.sin(startRad);
+              const x2 = 60 + 50 * Math.cos(endRad);
+              const y2 = 60 + 50 * Math.sin(endRad);
+              
+              const largeArcFlag = angle > 180 ? 1 : 0;
+              
+              const pathData = [
+                `M 60 60`,
+                `L ${x1} ${y1}`,
+                `A 50 50 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                'Z'
+              ].join(' ');
+              
+              return (
+                <path
+                  key={index}
+                  d={pathData}
+                  fill={item.color || getChartColor(index)}
+                  stroke="#fff"
+                  strokeWidth="2"
+                />
+              );
+            })}
+          </svg>
+        </div>
+        <div className="pie-center">
+          <div className="pie-total">{total}</div>
+          <div className="pie-label">Total</div>
+        </div>
+      </div>
+      <div className="pie-legend-enhanced">
+        {data.map((item, index) => {
+          const percentage = ((item.value || 0) / total) * 100;
+          return (
+            <div key={index} className="legend-item-enhanced">
+              <div className="legend-color" style={{ backgroundColor: item.color || getChartColor(index) }}></div>
+              <div className="legend-info">
+                <div className="legend-label">{item.label}</div>
+                <div className="legend-value">{item.value} ({Math.round(percentage)}%)</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const renderDoctorsChart = (data, title) => {
+  if (!data || data.length === 0) {
+    return (
+      <div className="empty-chart">
+        <div className="empty-chart-icon">👨‍⚕️</div>
+        <p>Nenhum médico com consultas</p>
+      </div>
+    );
+  }
+
+  const maxConsultas = Math.max(...data.map(item => item.totalConsultas || 0));
+
+  return (
+    <div className="doctors-chart">
+      {data.map((medico, index) => {
+        const percentage = ((medico.totalConsultas || 0) / maxConsultas) * 100;
+        return (
+          <div key={index} className="doctor-bar">
+            <div className="doctor-info-compact">
+              <span className="doctor-name">{medico.medico?.split(' ')[0] || 'Médico'}</span>
+              <span className="doctor-specialty">{medico.especialidade}</span>
+            </div>
+            <div className="doctor-bar-container">
+              <div
+                className="doctor-bar-fill"
+                style={{ width: `${percentage}%` }}
+              ></div>
+              <span className="doctor-bar-value">{medico.totalConsultas || 0}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const renderTimeChart = (data, title) => {
+  if (!data || data.length === 0) {
+    return (
+      <div className="empty-chart">
+        <div className="empty-chart-icon">⏰</div>
+        <p>Sem dados de horários</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="time-chart">
+      {data.slice(0, 8).map((item, index) => (
+        <div key={index} className="time-item">
+          <span className="time-label">{item._id}</span>
+          <div className="time-bar-container">
+            <div
+              className="time-bar-fill"
+              style={{ width: `${(item.total / Math.max(...data.map(d => d.total))) * 100}%` }}
+            ></div>
+            <span className="time-value">{item.total}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Funções utilitárias para estatísticas
+const calculateTotalConsultas = (consultasPorMes) => {
+  if (!consultasPorMes) return 0;
+  return consultasPorMes.reduce((sum, item) => sum + (item.total || 0), 0);
+};
+
+const calculateTaxaComparecimento = (consultasPorMes) => {
+  if (!consultasPorMes || consultasPorMes.length === 0) return 0;
+  const total = calculateTotalConsultas(consultasPorMes);
+  const realizadas = consultasPorMes.reduce((sum, item) => sum + (item.realizadas || 0), 0);
+  return total > 0 ? Math.round((realizadas / total) * 100) : 0;
+};
+
+const calculateTaxaCancelamento = (consultasPorMes) => {
+  if (!consultasPorMes || consultasPorMes.length === 0) return 0;
+  const total = calculateTotalConsultas(consultasPorMes);
+  const canceladas = consultasPorMes.reduce((sum, item) => sum + (item.canceladas || 0), 0);
+  return total > 0 ? Math.round((canceladas / total) * 100) : 0;
+};
+
+const findHorarioMaisPopular = (horariosPopulares) => {
+  if (!horariosPopulares || horariosPopulares.length === 0) return 'N/A';
+  const maisPopular = horariosPopulares.reduce((prev, current) => 
+    (prev.total > current.total) ? prev : current
+  );
+  return maisPopular._id;
+};
+
+const getPerformanceLabel = (taxa) => {
+  if (taxa >= 80) return 'Excelente';
+  if (taxa >= 60) return 'Boa';
+  if (taxa >= 40) return 'Média';
+  return 'Baixa';
+};
 
   return (
     <div className="admin-container">
-      <div className="admin-header">
-        <h1>🛠️ Painel Administrativo</h1>
-        <div className="header-actions">
-          <button className="back-button" onClick={() => navigate('/dashboard-medico')}>
-            ← Voltar ao Dashboard
+      {/* Header */}
+      <header className="admin-header">
+        <div className="header-content">
+          <div className="header-title">
+            <h1>Painel Administrativo</h1>
+            <p>Gerencie usuários, médicos e consultas do sistema</p>
+          </div>
+          <div className="header-actions">
+            <button className="btn btn-outline" onClick={() => navigate('/dashboard-medico')}>
+              ← Voltar ao Dashboard
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation Tabs */}
+      <nav className="admin-nav">
+        <div className="nav-tabs">
+          <button
+            className={`nav-tab ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            <span className="tab-icon">📊</span>
+            <span className="tab-label">Dashboard</span>
+          </button>
+          <button
+            className={`nav-tab ${activeTab === 'medicos' ? 'active' : ''}`}
+            onClick={() => setActiveTab('medicos')}
+          >
+            <span className="tab-icon">👨‍⚕️</span>
+            <span className="tab-label">Médicos</span>
+          </button>
+          <button
+            className={`nav-tab ${activeTab === 'usuarios' ? 'active' : ''}`}
+            onClick={() => setActiveTab('usuarios')}
+          >
+            <span className="tab-icon">👥</span>
+            <span className="tab-label">Usuários</span>
+          </button>
+          <button
+            className={`nav-tab ${activeTab === 'consultas' ? 'active' : ''}`}
+            onClick={() => setActiveTab('consultas')}
+          >
+            <span className="tab-icon">📅</span>
+            <span className="tab-label">Consultas</span>
+          </button>
+          <button
+            className={`nav-tab ${activeTab === 'relatorios' ? 'active' : ''}`}
+            onClick={() => setActiveTab('relatorios')}
+          >
+            <span className="tab-icon">📈</span>
+            <span className="tab-label">Relatórios</span>
           </button>
         </div>
-      </div>
+      </nav>
 
-      {/* Tabs de Navegação */}
-      <div className="admin-tabs">
-        <button className={`tab-button ${activeTab === 'dashboard' ? 'active' : ''}`}
-          onClick={() => setActiveTab('dashboard')}>
-          📊 Dashboard
-        </button>
-        <button className={`tab-button ${activeTab === 'medicos' ? 'active' : ''}`}
-          onClick={() => setActiveTab('medicos')}>
-          👨‍⚕️ Gerenciar Médicos
-        </button>
-        <button className={`tab-button ${activeTab === 'usuarios' ? 'active' : ''}`}
-          onClick={() => setActiveTab('usuarios')}>
-          👥 Gerenciar Usuários
-        </button>
-        <button className={`tab-button ${activeTab === 'consultas' ? 'active' : ''}`}
-          onClick={() => setActiveTab('consultas')}>
-          📅 Gerenciar Consultas
-        </button>
-        <button className={`tab-button ${activeTab === 'relatorios' ? 'active' : ''}`}
-          onClick={() => setActiveTab('relatorios')}>
-          📈 Relatórios
-        </button>
-      </div>
-
-      {/* Conteúdo das Tabs */}
-      <div className="admin-content">
+      {/* Main Content */}
+      <main className="admin-main">
         {loading && (
           <div className="loading-overlay">
-            <div className="spinner"></div>
+            <div className="loading-spinner"></div>
             <p>Carregando...</p>
           </div>
         )}
 
-        {/* Dashboard */}
+        {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <div className="tab-content">
-            <h2>Visão Geral do Sistema</h2>
+            <div className="content-header">
+              <h2>Visão Geral</h2>
+            </div>
+
+            {/* Stats Grid */}
             <div className="stats-grid">
-              <div className="stat-card primary">
-                <div className="stat-icon">👥</div>
-                <div className="stat-info">
+              <div className="stat-card">
+                <div className="stat-icon user">👥</div>
+                <div className="stat-content">
                   <h3>{estatisticas.totalUsuarios}</h3>
                   <p>Total de Usuários</p>
                 </div>
               </div>
-              <div className="stat-card success">
-                <div className="stat-icon">👨‍⚕️</div>
-                <div className="stat-info">
+              <div className="stat-card">
+                <div className="stat-icon doctor">👨‍⚕️</div>
+                <div className="stat-content">
                   <h3>{estatisticas.totalMedicos}</h3>
                   <p>Médicos Cadastrados</p>
                 </div>
               </div>
-              <div className="stat-card warning">
-                <div className="stat-icon">📅</div>
-                <div className="stat-info">
+              <div className="stat-card">
+                <div className="stat-icon appointment">📅</div>
+                <div className="stat-content">
                   <h3>{estatisticas.totalConsultas}</h3>
                   <p>Total de Consultas</p>
                 </div>
               </div>
-              <div className="stat-card info">
-                <div className="stat-icon">🎯</div>
-                <div className="stat-info">
+              <div className="stat-card">
+                <div className="stat-icon today">🎯</div>
+                <div className="stat-content">
                   <h3>{estatisticas.consultasHoje}</h3>
                   <p>Consultas Hoje</p>
                 </div>
               </div>
             </div>
 
-            <div className="quick-actions-grid">
-              <button className="action-card" onClick={() => openModal('medico')}>
-                <div className="action-icon">➕</div>
-                <h4>Cadastrar Médico</h4>
-                <p>Adicionar novo profissional</p>
-              </button>
-              <button className="action-card" onClick={() => openModal('admin')}>
-                <div className="action-icon">🛠️</div>
-                <h4>Cadastrar Admin</h4>
-                <p>Adicionar novo administrador</p>
-              </button>
-              <button className="action-card" onClick={() => setActiveTab('consultas')}>
-                <div className="action-icon">📋</div>
-                <h4>Ver Consultas</h4>
-                <p>Gerenciar agendamentos</p>
-              </button>
-              <button className="action-card" onClick={() => setActiveTab('relatorios')}>
-                <div className="action-icon">📊</div>
-                <h4>Relatórios</h4>
-                <p>Estatísticas do sistema</p>
-              </button>
+            {/* Quick Actions */}
+            <div className="quick-actions">
+              <h3>Ações Rápidas</h3>
+              <div className="actions-grid">
+                <button className="action-card" onClick={() => openModal('medico')}>
+                  <div className="action-icon">➕</div>
+                  <div className="action-content">
+                    <h4>Cadastrar Médico</h4>
+                    <p>Adicionar novo profissional ao sistema</p>
+                  </div>
+                </button>
+                <button className="action-card" onClick={() => openModal('admin')}>
+                  <div className="action-icon">🛠️</div>
+                  <div className="action-content">
+                    <h4>Cadastrar Admin</h4>
+                    <p>Adicionar novo administrador</p>
+                  </div>
+                </button>
+                <button className="action-card" onClick={() => setActiveTab('consultas')}>
+                  <div className="action-icon">📋</div>
+                  <div className="action-content">
+                    <h4>Ver Consultas</h4>
+                    <p>Gerenciar agendamentos</p>
+                  </div>
+                </button>
+                <button className="action-card" onClick={() => setActiveTab('relatorios')}>
+                  <div className="action-icon">📊</div>
+                  <div className="action-content">
+                    <h4>Relatórios</h4>
+                    <p>Estatísticas do sistema</p>
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Gerenciar Médicos */}
+        {/* Médicos Tab */}
         {activeTab === 'medicos' && (
           <div className="tab-content">
-            <div className="section-header">
-              <h2>👨‍⚕️ Gerenciar Médicos</h2>
-              <button className="primary-button" onClick={() => openModal('medico')}>
-                ➕ Adicionar Médico
+            <div className="content-header">
+              <h2>Gerenciar Médicos</h2>
+              <button className="btn btn-primary" onClick={() => openModal('medico')}>
+                <span>➕</span>
+                Adicionar Médico
               </button>
             </div>
 
             {medicos.length === 0 ? (
               <div className="empty-state">
-                <p>Nenhum médico cadastrado</p>
+                <div className="empty-icon">👨‍⚕️</div>
+                <h3>Nenhum médico cadastrado</h3>
+                <p>Comece adicionando o primeiro médico ao sistema</p>
               </div>
             ) : (
               <div className="table-container">
@@ -715,33 +973,38 @@ const AdminDashboard = () => {
                   </thead>
                   <tbody>
                     {medicos.map(medico => (
-                      <tr key={medico._id} className={!medico.ativo ? 'inactive-row' : ''}>
+                      <tr key={medico._id} className={!medico.ativo ? 'inactive' : ''}>
                         <td>
-                          {medico.usuario?.nome}
-                          {!medico.ativo && <span style={{ color: '#dc3545', marginLeft: '8px' }}>(Inativo)</span>}
+                          <div className="user-info">
+                            <span className="user-name">{medico.usuario?.nome}</span>
+                            {!medico.ativo && <span className="inactive-label">Inativo</span>}
+                          </div>
                         </td>
                         <td>{medico.especialidade}</td>
-                        <td>{medico.crm}</td>
-                        <td>{medico.consultorio || 'Não informado'}</td>
+                        <td><code className="code-badge">{medico.crm}</code></td>
+                        <td>{medico.consultorio || '—'}</td>
                         <td>
                           <span className={`status-badge ${medico.ativo ? 'active' : 'inactive'}`}>
                             {medico.ativo ? 'Ativo' : 'Inativo'}
                           </span>
-                          {/* ✅ REMOVIDO o texto adicional - o badge já é suficiente */}
                         </td>
                         <td>
-                          <button
-                            className="btn-secondary"
-                            onClick={() => handleEditarMedico(medico)}
-                          >
-                            ✏️ Editar
-                          </button>
-                          <button
-                            className={medico.ativo ? 'btn-warning' : 'btn-success'}
-                            onClick={() => handleToggleMedicoStatus(medico._id, medico.ativo)}
-                          >
-                            {medico.ativo ? '⏸️ Desativar' : '▶️ Ativar'}
-                          </button>
+                          <div className="action-buttons">
+                            <button
+                              className="btn btn-icon"
+                              onClick={() => handleEditarMedico(medico)}
+                              title="Editar"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              className={`btn btn-icon ${medico.ativo ? 'warning' : 'success'}`}
+                              onClick={() => handleToggleMedicoStatus(medico._id, medico.ativo)}
+                              title={medico.ativo ? 'Desativar' : 'Ativar'}
+                            >
+                              {medico.ativo ? '⏸️' : '▶️'}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -752,13 +1015,14 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Gerenciar Usuários */}
+        {/* Usuários Tab */}
         {activeTab === 'usuarios' && (
           <div className="tab-content">
-            <div className="section-header">
-              <h2>👥 Gerenciar Usuários</h2>
-              <button className="primary-button" onClick={() => openModal('admin')}>
-                ➕ Cadastrar Admin
+            <div className="content-header">
+              <h2>Gerenciar Usuários</h2>
+              <button className="btn btn-primary" onClick={() => openModal('admin')}>
+                <span>➕</span>
+                Cadastrar Admin
               </button>
             </div>
 
@@ -776,7 +1040,11 @@ const AdminDashboard = () => {
                 <tbody>
                   {usuarios.map(usuario => (
                     <tr key={usuario._id}>
-                      <td>{usuario.nome}</td>
+                      <td>
+                        <div className="user-info">
+                          <span className="user-name">{usuario.nome}</span>
+                        </div>
+                      </td>
                       <td>{usuario.email}</td>
                       <td>
                         <span className="type-badge" style={{ backgroundColor: getTipoColor(usuario.tipo) }}>
@@ -789,26 +1057,31 @@ const AdminDashboard = () => {
                         </span>
                       </td>
                       <td>
-                        <button
-                          className="btn-secondary"
-                          onClick={() => handleEditarUsuario(usuario)}
-                        >
-                          ✏️ Editar
-                        </button>
-                        <button
-                          className={usuario.ativo ? 'btn-warning' : 'btn-success'}
-                          onClick={() => handleToggleUsuarioStatus(usuario._id, usuario.ativo)}
-                        >
-                          {usuario.ativo ? '⏸️ Desativar' : '▶️ Ativar'}
-                        </button>
-                        {usuario.tipo !== 'admin' && (
+                        <div className="action-buttons">
                           <button
-                            className="btn-danger"
-                            onClick={() => handleResetarSenha(usuario._id)}
+                            className="btn btn-icon"
+                            onClick={() => handleEditarUsuario(usuario)}
+                            title="Editar"
                           >
-                            🔑 Resetar Senha
+                            ✏️
                           </button>
-                        )}
+                          <button
+                            className={`btn btn-icon ${usuario.ativo ? 'warning' : 'success'}`}
+                            onClick={() => handleToggleUsuarioStatus(usuario._id, usuario.ativo)}
+                            title={usuario.ativo ? 'Desativar' : 'Ativar'}
+                          >
+                            {usuario.ativo ? '⏸️' : '▶️'}
+                          </button>
+                          {usuario.tipo !== 'admin' && (
+                            <button
+                              className="btn btn-icon danger"
+                              onClick={() => handleResetarSenha(usuario._id)}
+                              title="Resetar Senha"
+                            >
+                              🔑
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -818,11 +1091,11 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Na seção de Gerenciar Consultas */}
+        {/* Consultas Tab */}
         {activeTab === 'consultas' && (
           <div className="tab-content">
-            <div className="section-header">
-              <h2>📅 Todas as Consultas</h2>
+            <div className="content-header">
+              <h2>Todas as Consultas</h2>
               <div className="filters">
                 <select>
                   <option value="todas">Todas</option>
@@ -859,22 +1132,25 @@ const AdminDashboard = () => {
                           </span>
                         </td>
                         <td>
-                          {/* ✅ BOTÕES CORRIGIDOS */}
-                          <button
-                            className="btn-secondary"
-                            onClick={() => handleVerDetalhesConsulta(agendamento)}
-                          >
-                            👁️ Detalhes
-                          </button>
-
-                          {agendamento.status === 'agendado' && (
+                          <div className="action-buttons">
                             <button
-                              className="btn-danger"
-                              onClick={() => handleCancelarConsultaAdmin(agendamento._id)}
+                              className="btn btn-icon"
+                              onClick={() => handleVerDetalhesConsulta(agendamento)}
+                              title="Detalhes"
                             >
-                              ❌ Cancelar
+                              👁️
                             </button>
-                          )}
+
+                            {agendamento.status === 'agendado' && (
+                              <button
+                                className="btn btn-icon danger"
+                                onClick={() => handleCancelarConsultaAdmin(agendamento._id)}
+                                title="Cancelar Consulta"
+                              >
+                                ❌
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -891,111 +1167,157 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Relatórios */}
+        {/* Relatórios Tab - VERSÃO MELHORADA */}
         {activeTab === 'relatorios' && (
           <div className="tab-content">
-            <div className="section-header">
-              <h2>📈 Relatórios e Estatísticas</h2>
-              <div className="periodo-filtros">
-                <select onChange={(e) => loadRelatorios(e.target.value)}>
-                  <option value="7dias">Últimos 7 dias</option>
-                  <option value="30dias">Últimos 30 dias</option>
-                  <option value="90dias">Últimos 90 dias</option>
-                  <option value="1ano">Último ano</option>
-                </select>
+            <div className="content-header">
+              <div className="header-title">
+                <h2>Relatórios e Analytics</h2>
+                <p>Insights e métricas do desempenho do sistema</p>
+              </div>
+              <div className="header-controls">
+                <div className="periodo-filtros">
+                  <label>Período:</label>
+                  <select onChange={(e) => loadRelatorios(e.target.value)} className="period-select">
+                    <option value="7dias">Últimos 7 dias</option>
+                    <option value="30dias">Últimos 30 dias</option>
+                    <option value="90dias">Últimos 90 dias</option>
+                    <option value="1ano">Último ano</option>
+                  </select>
+                </div>
+                <button className="btn btn-outline" onClick={() => loadRelatorios()}>
+                  🔄 Atualizar
+                </button>
               </div>
             </div>
 
-            {/* ✅ MÉTRICAS PRINCIPAIS */}
-            <div className="metrics-grid-relatorios">
-              {renderMetricCard(
-                'Taxa de Comparecimento',
-                relatorios.taxas?.comparecimento ? `${Math.round(relatorios.taxas.comparecimento)}%` : '0%',
-                'Consultas realizadas vs agendadas',
-                'success'
-              )}
-              {renderMetricCard(
-                'Taxa de Cancelamento',
-                relatorios.taxas?.cancelamento ? `${Math.round(relatorios.taxas.cancelamento)}%` : '0%',
-                'Consultas canceladas',
-                'danger'
-              )}
-              {renderMetricCard(
-                'Total Período',
-                relatorios.consultasPorMes?.reduce((sum, item) => sum + item.total, 0) || 0,
-                'Consultas no período',
-                'primary'
-              )}
-            </div>
-
-            <div className="reports-grid">
-              {/* ✅ GRÁFICO: CONSULTAS POR MÊS */}
-              <div className="report-card">
-                <h3>📅 Consultas por Mês</h3>
-                {renderBarChart(
-                  relatorios.consultasPorMes?.map(item => ({
-                    label: item.mes,
-                    total: item.total
-                  })),
-                  'Evolução Mensal',
-                  '#007bff'
-                )}
+            {/* KPI Cards */}
+            <div className="kpi-grid">
+              <div className="kpi-card primary">
+                <div className="kpi-icon">📊</div>
+                <div className="kpi-content">
+                  <div className="kpi-value">{relatorios.consultasPorMes?.reduce((sum, item) => sum + item.total, 0) || 0}</div>
+                  <div className="kpi-label">Total de Consultas</div>
+                  <div className="kpi-trend">
+                    <span className="trend-up">↗️</span>
+                    <span>Período selecionado</span>
+                  </div>
+                </div>
               </div>
 
-              {/* ✅ GRÁFICO: MÉDICOS MAIS SOLICITADOS */}
-              <div className="report-card">
-                <h3>👨‍⚕️ Médicos Mais Solicitados</h3>
-                {renderBarChart(
-                  relatorios.medicosMaisSolicitados?.slice(0, 5).map(item => ({
-                    label: item.medico,
-                    total: item.totalConsultas
-                  })),
-                  'Top 5 Médicos',
-                  '#28a745'
-                )}
+              <div className="kpi-card success">
+                <div className="kpi-icon">✅</div>
+                <div className="kpi-content">
+                  <div className="kpi-value">
+                    {relatorios.taxas?.comparecimento ? `${Math.round(relatorios.taxas.comparecimento)}%` : '0%'}
+                  </div>
+                  <div className="kpi-label">Taxa de Comparecimento</div>
+                  <div className="kpi-trend">
+                    <span className="trend-up">📈</span>
+                    <span>Eficiência do sistema</span>
+                  </div>
+                </div>
               </div>
 
-              {/* ✅ GRÁFICO: HORÁRIOS POPULARES - VERSÃO DIRETA */}
-              <div className="report-card">
-                <h3>⏰ Horários Mais Populares</h3>
-                {renderPieChart(
-                  relatorios.horariosPopulares?.map(item => ({
-                    label: item._id,
-                    value: item.total
-                  })) || [],
-                  'Horários Mais Agendados'
-                )}
+              <div className="kpi-card warning">
+                <div className="kpi-icon">⏰</div>
+                <div className="kpi-content">
+                  <div className="kpi-value">
+                    {relatorios.taxas?.cancelamento ? `${Math.round(relatorios.taxas.cancelamento)}%` : '0%'}
+                  </div>
+                  <div className="kpi-label">Taxa de Cancelamento</div>
+                  <div className="kpi-trend">
+                    <span className="trend-down">📉</span>
+                    <span>Monitoramento</span>
+                  </div>
+                </div>
               </div>
 
-              {/* ✅ GRÁFICO: STATUS DAS CONSULTAS - VERSÃO DIRETA */}
-              <div className="report-card">
-                <h3>📊 Status das Consultas</h3>
-                {renderPieChart(
-                  relatorios.consultasPorMes?.length > 0 ? [
-                    {
-                      label: 'Realizadas',
-                      value: relatorios.consultasPorMes.reduce((sum, item) => sum + (item.realizadas || 0), 0)
-                    },
-                    {
-                      label: 'Canceladas',
-                      value: relatorios.consultasPorMes.reduce((sum, item) => sum + (item.canceladas || 0), 0)
-                    },
-                    {
-                      label: 'Agendadas',
-                      value: relatorios.consultasPorMes.reduce((sum, item) => sum + (item.total || 0), 0) -
-                        relatorios.consultasPorMes.reduce((sum, item) => sum + (item.realizadas || 0), 0) -
-                        relatorios.consultasPorMes.reduce((sum, item) => sum + (item.canceladas || 0), 0)
-                    }
-                  ] : [],
-                  'Distribuição por Status'
-                )}
+              <div className="kpi-card info">
+                <div className="kpi-icon">👨‍⚕️</div>
+                <div className="kpi-content">
+                  <div className="kpi-value">{relatorios.medicosMaisSolicitados?.length || 0}</div>
+                  <div className="kpi-label">Médicos Ativos</div>
+                  <div className="kpi-trend">
+                    <span className="trend-up">👍</span>
+                    <span>Em atividade</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* ✅ TABELA: MÉDICOS MAIS SOLICITADOS (DETALHADA) */}
-            {relatorios.medicosMaisSolicitados && relatorios.medicosMaisSolicitados.length > 0 && (
-              <div className="report-card full-width">
-                <h3>🏆 Ranking de Médicos</h3>
+            {/* Gráficos Principais */}
+            <div className="charts-grid">
+              {/* Gráfico de Consultas por Mês */}
+              <div className="chart-card">
+                <div className="chart-header">
+                  <h3>📈 Evolução de Consultas</h3>
+                  <span className="chart-subtitle">Volume mensal de agendamentos</span>
+                </div>
+                <div className="chart-container">
+                  {renderEnhancedBarChart(
+                    relatorios.consultasPorMes?.map(item => ({
+                      label: item.mes,
+                      total: item.total,
+                      realizadas: item.realizadas || 0,
+                      canceladas: item.canceladas || 0
+                    })) || [],
+                    'Consultas por Mês'
+                  )}
+                </div>
+              </div>
+
+              {/* Gráfico de Distribuição por Status */}
+              <div className="chart-card">
+                <div className="chart-header">
+                  <h3>🎯 Status das Consultas</h3>
+                  <span className="chart-subtitle">Distribuição por situação</span>
+                </div>
+                <div className="chart-container">
+                  {renderEnhancedPieChart(
+                    relatorios.consultasPorMes ? calculateStatusDistribution(relatorios.consultasPorMes) : [],
+                    'Distribuição por Status'
+                  )}
+                </div>
+              </div>
+
+              {/* Top Médicos */}
+              <div className="chart-card">
+                <div className="chart-header">
+                  <h3>🏆 Top Médicos</h3>
+                  <span className="chart-subtitle">Profissionais mais solicitados</span>
+                </div>
+                <div className="chart-container">
+                  {renderDoctorsChart(
+                    relatorios.medicosMaisSolicitados?.slice(0, 6) || [],
+                    'Médicos Mais Solicitados'
+                  )}
+                </div>
+              </div>
+
+              {/* Horários Populares */}
+              <div className="chart-card">
+                <div className="chart-header">
+                  <h3>⏰ Horários Preferidos</h3>
+                  <span className="chart-subtitle">Preferência de agendamento</span>
+                </div>
+                <div className="chart-container">
+                  {renderTimeChart(
+                    relatorios.horariosPopulares || [],
+                    'Horários Mais Populares'
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Tabela Detalhada */}
+            <div className="detailed-reports">
+              <div className="report-section">
+                <div className="section-header">
+                  <h3>📋 Relatório Detalhado de Médicos</h3>
+                  <span className="section-description">Desempenho individual por profissional</span>
+                </div>
+
                 <div className="table-container">
                   <table className="data-table">
                     <thead>
@@ -1004,69 +1326,159 @@ const AdminDashboard = () => {
                         <th>Especialidade</th>
                         <th>Total Consultas</th>
                         <th>Realizadas</th>
+                        <th>Canceladas</th>
                         <th>Taxa de Sucesso</th>
+                        <th>Performance</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {relatorios.medicosMaisSolicitados.map((medico, index) => (
-                        <tr key={index}>
-                          <td>{medico.medico}</td>
-                          <td>{medico.especialidade}</td>
-                          <td>{medico.totalConsultas}</td>
-                          <td>{medico.consultasRealizadas}</td>
-                          <td>
-                            <span className={`status-badge ${medico.taxaSucesso > 80 ? 'active' : medico.taxaSucesso > 60 ? 'warning' : 'danger'}`}>
-                              {Math.round(medico.taxaSucesso)}%
-                            </span>
+                      {relatorios.medicosMaisSolicitados && relatorios.medicosMaisSolicitados.length > 0 ? (
+                        relatorios.medicosMaisSolicitados.map((medico, index) => (
+                          <tr key={index}>
+                            <td>
+                              <div className="doctor-info">
+                                <span className="doctor-name">{medico.medico}</span>
+                                <span className="doctor-crm">{medico.crm || 'CRM não informado'}</span>
+                              </div>
+                            </td>
+                            <td>{medico.especialidade}</td>
+                            <td>
+                              <span className="number-badge">{medico.totalConsultas}</span>
+                            </td>
+                            <td>
+                              <span className="success-badge">{medico.consultasRealizadas || 0}</span>
+                            </td>
+                            <td>
+                              <span className="danger-badge">{medico.consultasCanceladas || 0}</span>
+                            </td>
+                            <td>
+                              <div className="progress-cell">
+                                <div className="progress-bar">
+                                  <div
+                                    className="progress-fill"
+                                    style={{ width: `${Math.min(medico.taxaSucesso || 0, 100)}%` }}
+                                  ></div>
+                                </div>
+                                <span className="progress-text">{Math.round(medico.taxaSucesso || 0)}%</span>
+                              </div>
+                            </td>
+                            <td>
+                              <span className={`performance-badge ${(medico.taxaSucesso || 0) >= 80 ? 'excellent' :
+                                  (medico.taxaSucesso || 0) >= 60 ? 'good' :
+                                    (medico.taxaSucesso || 0) >= 40 ? 'average' : 'poor'
+                                }`}>
+                                {getPerformanceLabel(medico.taxaSucesso || 0)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="7" className="no-data">
+                            <div className="empty-state">
+                              <div className="empty-icon">📊</div>
+                              <h4>Nenhum dado disponível</h4>
+                              <p>Selecione um período para visualizar os relatórios</p>
+                            </div>
                           </td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>
               </div>
-            )}
+
+              {/* Resumo Estatístico */}
+              <div className="stats-summary">
+                <div className="stat-item">
+                  <div className="stat-value">{calculateTotalConsultas(relatorios.consultasPorMes)}</div>
+                  <div className="stat-label">Total de Consultas</div>
+                </div>
+                <div className="stat-item">
+                  <div className="stat-value">{calculateTaxaComparecimento(relatorios.consultasPorMes)}%</div>
+                  <div className="stat-label">Taxa Média de Comparecimento</div>
+                </div>
+                <div className="stat-item">
+                  <div className="stat-value">{calculateTaxaCancelamento(relatorios.consultasPorMes)}%</div>
+                  <div className="stat-label">Taxa Média de Cancelamento</div>
+                </div>
+                <div className="stat-item">
+                  <div className="stat-value">{findHorarioMaisPopular(relatorios.horariosPopulares)}</div>
+                  <div className="stat-label">Horário Mais Popular</div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
-      </div>
+      </main>
 
-      {/* Modais */}
+      {/* Modal */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-content large">
-            {modalType === 'medico' && (
-              <>
-                <h3>👨‍⚕️ Cadastrar Novo Médico</h3>
-                <form onSubmit={handleCreateMedico}>
+          <div className="modal">
+            <div className="modal-header">
+              <h3>
+                {modalType === 'medico' && '👨‍⚕️ Cadastrar Médico'}
+                {modalType === 'admin' && '🛠️ Cadastrar Administrador'}
+                {modalType === 'editar-medico' && '✏️ Editar Médico'}
+                {modalType === 'editar-usuario' && '✏️ Editar Usuário'}
+                {modalType === 'detalhes-consulta' && '👁️ Detalhes da Consulta'}
+              </h3>
+              <button
+                className="btn btn-icon close-btn"
+                onClick={() => setShowModal(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {/* Modal Cadastrar Médico */}
+              {modalType === 'medico' && (
+                <form onSubmit={handleCreateMedico} className="modal-form">
                   <div className="form-grid">
                     <div className="form-group">
                       <label>Nome Completo *</label>
-                      <input type="text" value={formMedico.nome}
+                      <input
+                        type="text"
+                        value={formMedico.nome}
                         onChange={(e) => setFormMedico(prev => ({ ...prev, nome: e.target.value }))}
-                        required />
+                        required
+                      />
                     </div>
                     <div className="form-group">
                       <label>Email *</label>
-                      <input type="email" value={formMedico.email}
+                      <input
+                        type="email"
+                        value={formMedico.email}
                         onChange={(e) => setFormMedico(prev => ({ ...prev, email: e.target.value }))}
-                        required />
+                        required
+                      />
                     </div>
                     <div className="form-group">
                       <label>Telefone</label>
-                      <input type="tel" value={formMedico.telefone}
-                        onChange={(e) => setFormMedico(prev => ({ ...prev, telefone: e.target.value }))} />
+                      <input
+                        type="tel"
+                        value={formMedico.telefone}
+                        onChange={(e) => setFormMedico(prev => ({ ...prev, telefone: e.target.value }))}
+                      />
                     </div>
                     <div className="form-group">
                       <label>Senha *</label>
-                      <input type="password" value={formMedico.senha}
+                      <input
+                        type="password"
+                        value={formMedico.senha}
                         onChange={(e) => setFormMedico(prev => ({ ...prev, senha: e.target.value }))}
-                        required />
+                        required
+                      />
                     </div>
                     <div className="form-group">
                       <label>Especialidade *</label>
-                      <select value={formMedico.especialidade}
+                      <select
+                        value={formMedico.especialidade}
                         onChange={(e) => setFormMedico(prev => ({ ...prev, especialidade: e.target.value }))}
-                        required>
+                        required
+                      >
                         <option value="">Selecione</option>
                         <option value="Ginecologista">Ginecologista</option>
                         <option value="Ortopedista">Ortopedista</option>
@@ -1077,18 +1489,24 @@ const AdminDashboard = () => {
                     </div>
                     <div className="form-group">
                       <label>CRM *</label>
-                      <input type="text" value={formMedico.crm}
+                      <input
+                        type="text"
+                        value={formMedico.crm}
                         onChange={(e) => setFormMedico(prev => ({ ...prev, crm: e.target.value }))}
-                        required />
+                        required
+                      />
                     </div>
                     <div className="form-group">
                       <label>Consultório</label>
-                      <input type="text" value={formMedico.consultorio}
-                        onChange={(e) => setFormMedico(prev => ({ ...prev, consultorio: e.target.value }))} />
+                      <input
+                        type="text"
+                        value={formMedico.consultorio}
+                        onChange={(e) => setFormMedico(prev => ({ ...prev, consultorio: e.target.value }))}
+                      />
                     </div>
                   </div>
 
-                  {/* ✅ NOVO: Editor de Horários de Atendimento */}
+                  {/* Editor de Horários */}
                   <div className="horarios-section">
                     <h4>📅 Horários de Atendimento</h4>
                     <p className="section-description">
@@ -1106,10 +1524,8 @@ const AdminDashboard = () => {
                                 onChange={(e) => {
                                   const novosDias = [...formMedico.diasAtendimento];
                                   if (e.target.checked) {
-                                    // Ativa o dia com horários padrão
                                     novosDias[index].horarios = ['08:00', '09:00', '10:00', '14:00', '15:00'];
                                   } else {
-                                    // Desativa o dia
                                     novosDias[index].horarios = [];
                                   }
                                   setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
@@ -1174,13 +1590,11 @@ const AdminDashboard = () => {
                       ))}
                     </div>
 
-                    {/* Botões de ação rápida */}
                     <div className="quick-horarios-actions">
                       <button
                         type="button"
-                        className="btn-secondary"
+                        className="btn btn-secondary"
                         onClick={() => {
-                          // Configurar horários padrão da manhã
                           const novosDias = formMedico.diasAtendimento.map(dia => ({
                             ...dia,
                             horarios: ['08:00', '09:00', '10:00', '11:00']
@@ -1192,9 +1606,8 @@ const AdminDashboard = () => {
                       </button>
                       <button
                         type="button"
-                        className="btn-secondary"
+                        className="btn btn-secondary"
                         onClick={() => {
-                          // Configurar horários padrão da tarde
                           const novosDias = formMedico.diasAtendimento.map(dia => ({
                             ...dia,
                             horarios: ['14:00', '15:00', '16:00', '17:00']
@@ -1206,9 +1619,8 @@ const AdminDashboard = () => {
                       </button>
                       <button
                         type="button"
-                        className="btn-secondary"
+                        className="btn btn-secondary"
                         onClick={() => {
-                          // Limpar todos os horários
                           const novosDias = formMedico.diasAtendimento.map(dia => ({
                             ...dia,
                             horarios: []
@@ -1221,52 +1633,122 @@ const AdminDashboard = () => {
                     </div>
                   </div>
 
-                  <div className="modal-actions">
-                    <button type="submit" className="primary-button" disabled={loading}>
+                  <div className="form-actions">
+                    <button type="submit" className="btn btn-primary" disabled={loading}>
                       {loading ? 'Cadastrando...' : 'Cadastrar Médico'}
                     </button>
-                    <button type="button" className="secondary-button"
-                      onClick={() => setShowModal(false)}>
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={() => setShowModal(false)}
+                    >
                       Cancelar
                     </button>
                   </div>
                 </form>
-              </>
-            )}
+              )}
 
-            {modalType === 'editar-medico' && (
-              <>
-                <h3>✏️ Editar Médico</h3>
-                <form onSubmit={handleUpdateMedico}>
+              {/* Modal Cadastrar Admin */}
+              {modalType === 'admin' && (
+                <form onSubmit={handleCreateAdmin} className="modal-form">
                   <div className="form-grid">
                     <div className="form-group">
                       <label>Nome Completo *</label>
-                      <input type="text" value={formMedico.nome}
-                        onChange={(e) => setFormMedico(prev => ({ ...prev, nome: e.target.value }))}
-                        required />
+                      <input
+                        type="text"
+                        value={formAdmin.nome}
+                        onChange={(e) => setFormAdmin(prev => ({ ...prev, nome: e.target.value }))}
+                        required
+                      />
                     </div>
                     <div className="form-group">
                       <label>Email *</label>
-                      <input type="email" value={formMedico.email}
-                        onChange={(e) => setFormMedico(prev => ({ ...prev, email: e.target.value }))}
-                        required />
+                      <input
+                        type="email"
+                        value={formAdmin.email}
+                        onChange={(e) => setFormAdmin(prev => ({ ...prev, email: e.target.value }))}
+                        required
+                      />
                     </div>
                     <div className="form-group">
                       <label>Telefone</label>
-                      <input type="tel" value={formMedico.telefone}
-                        onChange={(e) => setFormMedico(prev => ({ ...prev, telefone: e.target.value }))} />
+                      <input
+                        type="tel"
+                        value={formAdmin.telefone}
+                        onChange={(e) => setFormAdmin(prev => ({ ...prev, telefone: e.target.value }))}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Senha *</label>
+                      <input
+                        type="password"
+                        value={formAdmin.senha}
+                        onChange={(e) => setFormAdmin(prev => ({ ...prev, senha: e.target.value }))}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="form-actions">
+                    <button type="submit" className="btn btn-primary" disabled={loading}>
+                      {loading ? 'Cadastrando...' : 'Cadastrar Admin'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={() => setShowModal(false)}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Modal Editar Médico */}
+              {modalType === 'editar-medico' && (
+                <form onSubmit={handleUpdateMedico} className="modal-form">
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label>Nome Completo *</label>
+                      <input
+                        type="text"
+                        value={formMedico.nome}
+                        onChange={(e) => setFormMedico(prev => ({ ...prev, nome: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Email *</label>
+                      <input
+                        type="email"
+                        value={formMedico.email}
+                        onChange={(e) => setFormMedico(prev => ({ ...prev, email: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Telefone</label>
+                      <input
+                        type="tel"
+                        value={formMedico.telefone}
+                        onChange={(e) => setFormMedico(prev => ({ ...prev, telefone: e.target.value }))}
+                      />
                     </div>
                     <div className="form-group">
                       <label>Nova Senha (deixe em branco para manter atual)</label>
-                      <input type="password" value={formMedico.senha}
+                      <input
+                        type="password"
+                        value={formMedico.senha}
                         onChange={(e) => setFormMedico(prev => ({ ...prev, senha: e.target.value }))}
-                        placeholder="Deixe em branco para não alterar" />
+                        placeholder="Deixe em branco para não alterar"
+                      />
                     </div>
                     <div className="form-group">
                       <label>Especialidade *</label>
-                      <select value={formMedico.especialidade}
+                      <select
+                        value={formMedico.especialidade}
                         onChange={(e) => setFormMedico(prev => ({ ...prev, especialidade: e.target.value }))}
-                        required>
+                        required
+                      >
                         <option value="">Selecione</option>
                         <option value="Ginecologista">Ginecologista</option>
                         <option value="Ortopedista">Ortopedista</option>
@@ -1277,206 +1759,44 @@ const AdminDashboard = () => {
                     </div>
                     <div className="form-group">
                       <label>CRM *</label>
-                      <input type="text" value={formMedico.crm}
+                      <input
+                        type="text"
+                        value={formMedico.crm}
                         onChange={(e) => setFormMedico(prev => ({ ...prev, crm: e.target.value }))}
-                        required />
+                        required
+                      />
                     </div>
                     <div className="form-group">
                       <label>Consultório</label>
-                      <input type="text" value={formMedico.consultorio}
-                        onChange={(e) => setFormMedico(prev => ({ ...prev, consultorio: e.target.value }))} />
+                      <input
+                        type="text"
+                        value={formMedico.consultorio}
+                        onChange={(e) => setFormMedico(prev => ({ ...prev, consultorio: e.target.value }))}
+                      />
                     </div>
                   </div>
 
-                  {/* Editor de Horários (mesmo do cadastro) */}
-                  <div className="horarios-section">
-                    <h4>📅 Horários de Atendimento</h4>
-                    <p className="section-description">
-                      Configure os dias e horários em que o médico atende
-                    </p>
-
-                    <div className="dias-atendimento-grid">
-                      {formMedico.diasAtendimento.map((dia, index) => (
-                        <div key={dia.diaSemana} className="dia-atendimento-card">
-                          <div className="dia-header">
-                            <label className="dia-checkbox">
-                              <input
-                                type="checkbox"
-                                checked={dia.horarios.length > 0}
-                                onChange={(e) => {
-                                  const novosDias = [...formMedico.diasAtendimento];
-                                  if (e.target.checked) {
-                                    novosDias[index].horarios = ['08:00', '09:00', '10:00', '14:00', '15:00'];
-                                  } else {
-                                    novosDias[index].horarios = [];
-                                  }
-                                  setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
-                                }}
-                              />
-                              <span className="dia-nome">
-                                {dia.diaSemana === 'segunda' && 'Segunda-feira'}
-                                {dia.diaSemana === 'terca' && 'Terça-feira'}
-                                {dia.diaSemana === 'quarta' && 'Quarta-feira'}
-                                {dia.diaSemana === 'quinta' && 'Quinta-feira'}
-                                {dia.diaSemana === 'sexta' && 'Sexta-feira'}
-                                {dia.diaSemana === 'sabado' && 'Sábado'}
-                              </span>
-                            </label>
-                          </div>
-
-                          {dia.horarios.length > 0 && (
-                            <div className="horarios-list">
-                              <div className="horarios-header">
-                                <span>Horários</span>
-                                <button
-                                  type="button"
-                                  className="btn-add-horario"
-                                  onClick={() => {
-                                    const novosDias = [...formMedico.diasAtendimento];
-                                    novosDias[index].horarios.push('08:00');
-                                    setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
-                                  }}
-                                >
-                                  + Add
-                                </button>
-                              </div>
-
-                              {dia.horarios.map((horario, horarioIndex) => (
-                                <div key={horarioIndex} className="horario-item">
-                                  <input
-                                    type="time"
-                                    value={horario}
-                                    onChange={(e) => {
-                                      const novosDias = [...formMedico.diasAtendimento];
-                                      novosDias[index].horarios[horarioIndex] = e.target.value;
-                                      setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
-                                    }}
-                                    className="time-input"
-                                  />
-                                  <button
-                                    type="button"
-                                    className="btn-remove-horario"
-                                    onClick={() => {
-                                      const novosDias = [...formMedico.diasAtendimento];
-                                      novosDias[index].horarios.splice(horarioIndex, 1);
-                                      setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
-                                    }}
-                                  >
-                                    ×
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="quick-horarios-actions">
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={() => {
-                          const novosDias = formMedico.diasAtendimento.map(dia => ({
-                            ...dia,
-                            horarios: ['08:00', '09:00', '10:00', '11:00']
-                          }));
-                          setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
-                        }}
-                      >
-                        ⏰ Horários Manhã
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={() => {
-                          const novosDias = formMedico.diasAtendimento.map(dia => ({
-                            ...dia,
-                            horarios: ['14:00', '15:00', '16:00', '17:00']
-                          }));
-                          setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
-                        }}
-                      >
-                        🕒 Horários Tarde
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={() => {
-                          const novosDias = formMedico.diasAtendimento.map(dia => ({
-                            ...dia,
-                            horarios: []
-                          }));
-                          setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
-                        }}
-                      >
-                        🗑️ Limpar Todos
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="modal-actions">
-                    <button type="submit" className="primary-button" disabled={loading}>
+                  <div className="form-actions">
+                    <button type="submit" className="btn btn-primary" disabled={loading}>
                       {loading ? 'Atualizando...' : '💾 Atualizar Médico'}
                     </button>
-                    <button type="button" className="secondary-button"
+                    <button
+                      type="button"
+                      className="btn btn-outline"
                       onClick={() => {
                         setShowModal(false);
                         setSelectedAgendamento(null);
-                      }}>
+                      }}
+                    >
                       Cancelar
                     </button>
                   </div>
                 </form>
-              </>
-            )}
+              )}
 
-            {modalType === 'admin' && (
-              <>
-                <h3>🛠️ Cadastrar Novo Administrador</h3>
-                <form onSubmit={handleCreateAdmin}>
-                  <div className="form-grid">
-                    <div className="form-group">
-                      <label>Nome Completo *</label>
-                      <input type="text" value={formAdmin.nome}
-                        onChange={(e) => setFormAdmin(prev => ({ ...prev, nome: e.target.value }))}
-                        required />
-                    </div>
-                    <div className="form-group">
-                      <label>Email *</label>
-                      <input type="email" value={formAdmin.email}
-                        onChange={(e) => setFormAdmin(prev => ({ ...prev, email: e.target.value }))}
-                        required />
-                    </div>
-                    <div className="form-group">
-                      <label>Telefone</label>
-                      <input type="tel" value={formAdmin.telefone}
-                        onChange={(e) => setFormAdmin(prev => ({ ...prev, telefone: e.target.value }))} />
-                    </div>
-                    <div className="form-group">
-                      <label>Senha *</label>
-                      <input type="password" value={formAdmin.senha}
-                        onChange={(e) => setFormAdmin(prev => ({ ...prev, senha: e.target.value }))}
-                        required />
-                    </div>
-                  </div>
-                  <div className="modal-actions">
-                    <button type="submit" className="primary-button" disabled={loading}>
-                      {loading ? 'Cadastrando...' : 'Cadastrar Admin'}
-                    </button>
-                    <button type="button" className="secondary-button"
-                      onClick={() => setShowModal(false)}>
-                      Cancelar
-                    </button>
-                  </div>
-                </form>
-              </>
-            )}
-
-            {modalType === 'editar-usuario' && (
-              <>
-                <h3>✏️ Editar Usuário</h3>
-                <form onSubmit={handleUpdateUsuario}>
+              {/* Modal Editar Usuário */}
+              {modalType === 'editar-usuario' && (
+                <form onSubmit={handleUpdateUsuario} className="modal-form">
                   <div className="form-grid">
                     <div className="form-group">
                       <label>Nome Completo *</label>
@@ -1514,26 +1834,26 @@ const AdminDashboard = () => {
                       />
                     </div>
                   </div>
-                  <div className="modal-actions">
-                    <button type="submit" className="primary-button" disabled={loading}>
+                  <div className="form-actions">
+                    <button type="submit" className="btn btn-primary" disabled={loading}>
                       {loading ? 'Atualizando...' : '💾 Atualizar Usuário'}
                     </button>
-                    <button type="button" className="secondary-button"
+                    <button
+                      type="button"
+                      className="btn btn-outline"
                       onClick={() => {
                         setShowModal(false);
                         setSelectedAgendamento(null);
-                      }}>
+                      }}
+                    >
                       Cancelar
                     </button>
                   </div>
                 </form>
-              </>
-            )}
+              )}
 
-            {/* Modal de Detalhes da Consulta */}
-            {modalType === 'detalhes-consulta' && selectedAgendamento && (
-              <>
-                <h3>👁️ Detalhes da Consulta</h3>
+              {/* Modal Detalhes da Consulta */}
+              {modalType === 'detalhes-consulta' && selectedAgendamento && (
                 <div className="detalhes-consulta">
                   <div className="detalhes-grid">
                     <div className="detalhe-item">
@@ -1582,10 +1902,10 @@ const AdminDashboard = () => {
                     )}
                   </div>
 
-                  <div className="modal-actions">
+                  <div className="form-actions">
                     {selectedAgendamento.status === 'agendado' && (
                       <button
-                        className="btn-danger"
+                        className="btn btn-danger"
                         onClick={() => {
                           handleCancelarConsultaAdmin(selectedAgendamento._id);
                           setShowModal(false);
@@ -1596,15 +1916,15 @@ const AdminDashboard = () => {
                     )}
                     <button
                       type="button"
-                      className="secondary-button"
+                      className="btn btn-outline"
                       onClick={() => setShowModal(false)}
                     >
                       Fechar
                     </button>
                   </div>
                 </div>
-              </>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}
