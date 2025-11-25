@@ -405,51 +405,62 @@ exports.criarAdmin = async (req, res) => {
     }
 };
 
-// @desc    Criar administrador
-// @route   POST /api/usuarios/admin
+// ✅ ADICIONAR esta função no usuarioController.js
+// @desc    Atualizar usuário (admin)
+// @route   PUT /api/usuarios/:id
 // @access  Private/Admin
-exports.criarAdmin = async (req, res) => {
+exports.atualizarUsuario = async (req, res) => {
     try {
-        const { nome, email, telefone, senha } = req.body;
+        const usuarioId = req.params.id;
+        const { nome, email, telefone } = req.body;
 
-        console.log('📝 Tentando criar admin:', { nome, email });
+        console.log('📝 Atualizando usuário:', usuarioId, { nome, email, telefone });
 
-        // Verificar se usuário já existe
-        const usuarioExiste = await Usuario.findOne({ email });
-        if (usuarioExiste) {
-            return res.status(400).json({
+        const usuario = await Usuario.findById(usuarioId);
+
+        if (!usuario) {
+            return res.status(404).json({
                 success: false,
-                message: 'Usuário já existe com este email'
+                message: 'Usuário não encontrado'
             });
         }
 
-        // Criar admin
-        const admin = await Usuario.create({
-            nome,
-            email,
-            telefone,
-            senha,
-            tipo: 'admin'
-        });
-
-        console.log('✅ Admin criado com sucesso:', admin._id);
-
-        res.status(201).json({
-            success: true,
-            message: 'Administrador criado com sucesso',
-            data: {
-                id: admin._id,
-                nome: admin.nome,
-                email: admin.email,
-                tipo: admin.tipo
+        // Verificar se email já existe (excluindo o próprio usuário)
+        if (email && email !== usuario.email) {
+            const emailExiste = await Usuario.findOne({ 
+                email, 
+                _id: { $ne: usuarioId } 
+            });
+            if (emailExiste) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email já está em uso por outro usuário'
+                });
             }
+            usuario.email = email;
+        }
+
+        // Atualizar campos
+        if (nome) usuario.nome = nome;
+        if (telefone) usuario.telefone = telefone;
+
+        await usuario.save();
+
+        const usuarioAtualizado = await Usuario.findById(usuarioId).select('-senha');
+
+        console.log('✅ Usuário atualizado com sucesso:', usuarioId);
+
+        res.json({
+            success: true,
+            message: 'Usuário atualizado com sucesso',
+            data: usuarioAtualizado
         });
 
     } catch (error) {
-        console.error('❌ Erro ao criar administrador:', error);
+        console.error('❌ Erro ao atualizar usuário:', error);
         res.status(500).json({
             success: false,
-            message: 'Erro ao criar administrador',
+            message: 'Erro ao atualizar usuário',
             error: error.message
         });
     }

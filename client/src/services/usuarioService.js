@@ -122,5 +122,17 @@ async resetarSenha(usuarioId) {
   } catch (error) {
     throw error.response?.data || { message: 'Erro ao resetar senha' };
   }
-}
+},
+
+// ✅ ADICIONAR estas funções no usuarioService.js
+
+// Atualizar usuário (admin)
+async atualizarUsuario(usuarioId, dados) {
+  try {
+    const response = await api.put(`/usuarios/${usuarioId}`, dados);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Erro ao atualizar usuário' };
+  }
+},
 };
