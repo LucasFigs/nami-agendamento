@@ -11,6 +11,13 @@ import Perfil from './pages/Perfil.js';
 import HistoricoConsultas from './pages/HistoricoConsultas.js';
 import AdminDashboard from './pages/AdminDashboard.js';
 import MeusAgendamentos from './pages/MeusAgendamentos.js';
+
+// ✅ IMPORTAR AS NOVAS PÁGINAS DO MÉDICO
+import AgendaMedico from './pages/AgendaMedico.js';
+import PacientesMedico from './pages/PacientesMedico.js';
+import RelatoriosMedico from './pages/RelatoriosMedico.js';
+import PerfilMedico from './pages/PerfilMedico.js';
+
 import './App.css';
 
 // Componente de rota protegida
@@ -81,7 +88,7 @@ function App() {
             }
           />
 
-          {/* Rotas protegidas - Médico e Admin */}
+          {/* Rotas protegidas - Médico */}
           <Route
             path="/dashboard-medico"
             element={
@@ -91,6 +98,41 @@ function App() {
             }
           />
 
+          {/* ✅ NOVAS ROTAS PARA MÉDICO */}
+          <Route
+            path="/agenda-medico"
+            element={
+              <ProtectedRoute allowedTypes={['medico', 'admin']}>
+                <AgendaMedico />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/pacientes-medico"
+            element={
+              <ProtectedRoute allowedTypes={['medico', 'admin']}>
+                <PacientesMedico />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/relatorios-medico"
+            element={
+              <ProtectedRoute allowedTypes={['medico', 'admin']}>
+                <RelatoriosMedico />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/perfil-medico"
+            element={
+              <ProtectedRoute allowedTypes={['medico', 'admin']}>
+                <PerfilMedico />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Rotas protegidas - Admin */}
           <Route
             path="/admin"
             element={
@@ -113,6 +155,37 @@ function App() {
             }}>
               <h2>Acesso não autorizado</h2>
               <p>Você não tem permissão para acessar esta página.</p>
+              <button
+                onClick={() => window.history.back()}
+                style={{
+                  marginTop: '20px',
+                  padding: '10px 20px',
+                  background: '#FFD700',
+                  color: '#003366',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                Voltar
+              </button>
+            </div>
+          } />
+
+          {/* Rota fallback para páginas não encontradas */}
+          <Route path="*" element={
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100vh',
+              flexDirection: 'column',
+              background: 'linear-gradient(135deg, #003366 0%, #002244 100%)',
+              color: 'white'
+            }}>
+              <h2>Página não encontrada</h2>
+              <p>A página que você está procurando não existe.</p>
               <button
                 onClick={() => window.history.back()}
                 style={{
