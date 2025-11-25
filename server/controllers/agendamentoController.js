@@ -399,3 +399,297 @@ exports.getTodosAgendamentos = async (req, res) => {
         });
     }
 };
+
+// ✅ ADICIONAR esta função no agendamentoController.js
+// @desc    Cancelar agendamento (admin)
+// @route   PUT /api/agendamentos/:id/cancelar-admin
+// @access  Private/Admin
+exports.cancelarAgendamentoAdmin = async (req, res) => {
+    try {
+        const agendamentoId = req.params.id;
+
+        console.log('🛠️ Admin cancelando agendamento:', agendamentoId);
+
+        const agendamento = await Agendamento.findById(agendamentoId)
+            .populate('paciente', 'nome email')
+            .populate('medico', 'nome especialidade');
+
+        if (!agendamento) {
+            return res.status(404).json({
+                success: false,
+                message: 'Agendamento não encontrado'
+            });
+        }
+
+        // ✅ ADMIN pode cancelar QUALQUER agendamento, sem verificar proprietário
+
+        // Verificar se já não está cancelado
+        if (agendamento.status === 'cancelado') {
+            return res.status(400).json({
+                success: false,
+                message: 'Agendamento já está cancelado'
+            });
+        }
+
+        agendamento.status = 'cancelado';
+        await agendamento.save();
+
+        console.log('✅ Agendamento cancelado pelo admin:', agendamentoId);
+
+        res.json({
+            success: true,
+            message: 'Agendamento cancelado com sucesso pelo administrador',
+            data: agendamento
+        });
+
+    } catch (error) {
+        console.error('❌ Erro ao cancelar agendamento (admin):', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao cancelar agendamento',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Obter relatórios de consultas
+// @route   GET /api/agendamentos/relatorios
+// @access  Private/Admin
+exports.getRelatorios = async (req, res) => {
+    try {
+        const { periodo = '30dias' } = req.query; // 7dias, 30dias, 90dias, 1ano
+        
+        console.log('📈 Gerando relatórios para período:', periodo);
+
+        // Calcular datas baseadas no período
+        const dataFim = new Date();
+        const dataInicio = new Date();
+        
+        switch (periodo) {
+            case '7dias':
+                dataInicio.setDate(dataInicio.getDate() - 7);
+                break;
+            case '90dias':
+                dataInicio.setDate(dataInicio.getDate() - 90);
+                break;
+            case '1ano':
+                dataInicio.setFullYear(dataInicio.getFullYear() - 1);
+                break;
+            default: // 30 dias
+                dataInicio.setDate(dataInicio.getDate() - 30);
+        }
+
+        dataInicio.setHours(0, 0, 0, 0);
+
+        // Consultas por mês (últimos 6 meses)
+        const seisMesesAtras = new Date();
+        seisMesesAtras.setMonth(seisMesesAtras.getMonth() - 6);
+        seisMesesAtras.setHours(0, 0, 0, 0);
+
+        const consultasPorMes = await Agendamento.aggregate([
+            {
+                $match: {
+                    data: { $gte: seisMesesAtras }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: "$data" },
+                        month: { $month: "$data" }
+                    },
+                    total: { $sum: 1 },
+                    realizadas: {
+                        $sum: { $cond: [{ $eq: ["$status", "realizado"] }, 1, 0] }
+                    },
+                    canceladas: {
+                        $sum: { $cond: [{ $eq: ["$status", "cancelado"] }, 1, 0] }
+                    }
+                }
+            },
+            {
+                $sort: { "_id.year": 1, "_id.month": 1 }
+            }
+        ]);
+
+        // Médicos mais solicitados
+        const medicosMaisSolicitados = await Agendamento.aggregate([
+            {
+                $group: {
+                    _id: "$medico",
+                    totalConsultas: { $sum: 1 },
+                    consultasRealizadas: {
+                        $sum: { $cond: [{ $eq: ["$status", "realizado"] }, 1, 0] }
+                    }
+                }
+            },
+            {
+                $sort: { totalConsultas: -1 }
+            },
+            {
+                $limit: 10
+            },
+            {
+                $lookup: {
+                    from: "medicos",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "medicoInfo"
+                }
+            },
+            {
+                $unwind: "$medicoInfo"
+            },
+            {
+                $lookup: {
+                    from: "usuarios",
+                    localField: "medicoInfo.usuario",
+                    foreignField: "_id",
+                    as: "usuarioInfo"
+                }
+            },
+            {
+                $unwind: "$usuarioInfo"
+            },
+            {
+                $project: {
+                    medico: "$usuarioInfo.nome",
+                    especialidade: "$medicoInfo.especialidade",
+                    totalConsultas: 1,
+                    consultasRealizadas: 1,
+                    taxaSucesso: {
+                        $multiply: [
+                            { $divide: ["$consultasRealizadas", "$totalConsultas"] },
+                            100
+                        ]
+                    }
+                }
+            }
+        ]);
+
+        // Horários mais populares
+        const horariosPopulares = await Agendamento.aggregate([
+            {
+                $group: {
+                    _id: "$horario",
+                    total: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { total: -1 }
+            },
+            {
+                $limit: 10
+            }
+        ]);
+
+        // Taxa de comparecimento
+        const totalAgendamentos = await Agendamento.countDocuments({
+            data: { $gte: dataInicio, $lte: dataFim }
+        });
+        
+        const totalRealizados = await Agendamento.countDocuments({
+            data: { $gte: dataInicio, $lte: dataFim },
+            status: "realizado"
+        });
+
+        const taxaComparecimento = totalAgendamentos > 0 
+            ? (totalRealizados / totalAgendamentos) * 100 
+            : 0;
+
+        console.log('✅ Relatórios gerados com sucesso');
+
+        res.json({
+            success: true,
+            data: {
+                periodo: {
+                    inicio: dataInicio,
+                    fim: dataFim
+                },
+                consultasPorMes: consultasPorMes.map(item => ({
+                    mes: `${item._id.month}/${item._id.year}`,
+                    total: item.total,
+                    realizadas: item.realizadas,
+                    canceladas: item.canceladas
+                })),
+                medicosMaisSolicitados,
+                horariosPopulares,
+                taxas: {
+                    comparecimento: Math.round(taxaComparecimento * 100) / 100,
+                    cancelamento: totalAgendamentos > 0 
+                        ? Math.round(((totalAgendamentos - totalRealizados) / totalAgendamentos) * 100 * 100) / 100 
+                        : 0
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Erro ao gerar relatórios:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao gerar relatórios',
+            error: error.message
+        });
+    }
+};
+
+// ✅ FUNÇÃO ALTERNATIVA: Buscar status das consultas diretamente
+// @desc    Obter estatísticas de status das consultas
+// @route   GET /api/agendamentos/estatisticas-status
+// @access  Private/Admin
+exports.getEstatisticasStatus = async (req, res) => {
+    try {
+        const { periodo = '30dias' } = req.query;
+        
+        console.log('📊 Buscando estatísticas de status para período:', periodo);
+
+        // Calcular datas
+        const dataFim = new Date();
+        const dataInicio = new Date();
+        dataInicio.setDate(dataInicio.getDate() - 30); // Últimos 30 dias padrão
+        dataInicio.setHours(0, 0, 0, 0);
+
+        // Buscar contagem por status diretamente
+        const statusCounts = await Agendamento.aggregate([
+            {
+                $match: {
+                    data: { $gte: dataInicio, $lte: dataFim }
+                }
+            },
+            {
+                $group: {
+                    _id: "$status",
+                    total: { $sum: 1 }
+                }
+            }
+        ]);
+
+        console.log('✅ Estatísticas de status:', statusCounts);
+
+        // Formatar resposta
+        const estatisticas = {
+            agendado: 0,
+            realizado: 0,
+            cancelado: 0,
+            confirmado: 0,
+            faltou: 0
+        };
+
+        statusCounts.forEach(item => {
+            estatisticas[item._id] = item.total;
+        });
+
+        res.json({
+            success: true,
+            data: estatisticas
+        });
+
+    } catch (error) {
+        console.error('❌ Erro ao buscar estatísticas de status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao buscar estatísticas de status',
+            error: error.message
+        });
+    }
+};

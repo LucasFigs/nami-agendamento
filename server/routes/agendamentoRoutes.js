@@ -8,7 +8,10 @@ const {
     listarTodosAgendamentos, // ← ADICIONAR ESTA IMPORT
     getAgendamentosPaciente,
     getAgendamentosMedico,
-    getTodosAgendamentos      // ← ADICIONAR ESTA IMPORT
+    getTodosAgendamentos,
+    cancelarAgendamentoAdmin,
+    getRelatorios,
+    getEstatisticasStatus
 } = require('../controllers/agendamentoController');
 
 const proteger = require('../middleware/authMiddleware');
@@ -25,6 +28,10 @@ router.get('/medico', proteger, getAgendamentosMedico);
 
 // ✅ NOVA ROTA: Todos os agendamentos (apenas admin)
 router.get('/todos', proteger, adminOnly, getTodosAgendamentos);
+router.put('/:id/cancelar-admin', proteger, adminOnly, cancelarAgendamentoAdmin);
+// Adicione esta rota
+router.get('/relatorios', proteger, adminOnly, getRelatorios);
+router.get('/estatisticas-status', proteger, adminOnly, getEstatisticasStatus);
 
 // Rotas comuns
 router.get('/', proteger, listarAgendamentos);

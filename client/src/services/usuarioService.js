@@ -135,4 +135,14 @@ async atualizarUsuario(usuarioId, dados) {
     throw error.response?.data || { message: 'Erro ao atualizar usuário' };
   }
 },
+
+// Buscar estatísticas do sistema
+async getEstatisticas() {
+  try {
+    const response = await api.get('/usuarios/estatisticas');
+    return response.data.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Erro ao buscar estatísticas' };
+  }
+},
 };

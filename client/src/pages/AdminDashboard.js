@@ -21,6 +21,7 @@ const AdminDashboard = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState(''); // 'medico', 'admin', 'consulta'
   const [selectedAgendamento, setSelectedAgendamento] = useState(null);
+  const [estatisticasStatus, setEstatisticasStatus] = useState({});
 
   // Formulários
   const [formMedico, setFormMedico] = useState({
@@ -91,13 +92,31 @@ const AdminDashboard = () => {
   };
 
   const loadDashboardData = async () => {
-    // Implementar busca de estatísticas gerais
-    setEstatisticas({
-      totalUsuarios: 150,
-      totalMedicos: 12,
-      totalConsultas: 345,
-      consultasHoje: 8
-    });
+    try {
+      setLoading(true);
+
+      // ✅ BUSCAR ESTATÍSTICAS REAIS
+      const estatisticasReais = await usuarioService.getEstatisticas();
+
+      setEstatisticas({
+        totalUsuarios: estatisticasReais.usuarios.total,
+        totalMedicos: estatisticasReais.medicos.ativos, // Mostrar apenas médicos ativos
+        totalConsultas: estatisticasReais.consultas.total,
+        consultasHoje: estatisticasReais.consultas.hoje
+      });
+
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas:', error);
+      // Fallback para dados fictícios em caso de erro
+      setEstatisticas({
+        totalUsuarios: 0,
+        totalMedicos: 0,
+        totalConsultas: 0,
+        consultasHoje: 0
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const loadMedicos = async () => {
@@ -148,8 +167,181 @@ const AdminDashboard = () => {
     }
   };
 
-  const loadRelatorios = async () => {
-    // Implementar relatórios
+  const [relatorios, setRelatorios] = useState({
+    consultasPorMes: [],
+    medicosMaisSolicitados: [],
+    horariosPopulares: [],
+    taxas: {}
+  });
+
+  const loadRelatorios = async (periodo = '30dias') => {
+    try {
+      setLoading(true);
+
+      // ✅ BUSCAR RELATÓRIOS REAIS
+      const relatoriosData = await agendamentoService.getRelatorios(periodo);
+      console.log('Relatórios carregados:', relatoriosData);
+
+      setRelatorios(relatoriosData);
+
+      // ✅ BUSCAR ESTATÍSTICAS DE STATUS ALTERNATIVAS
+      await loadEstatisticasStatus(periodo);
+
+    } catch (error) {
+      console.error('Erro ao carregar relatórios:', error);
+      alert('Erro ao carregar relatórios: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Carregar estatísticas de status alternativas
+  const loadEstatisticasStatus = async (periodo = '30dias') => {
+    try {
+      const dados = await agendamentoService.getEstatisticasStatus(periodo);
+      setEstatisticasStatus(dados);
+      console.log('📊 Estatísticas de status carregadas:', dados);
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas de status:', error);
+    }
+  };
+
+  // ✅ Função para renderizar gráfico de barras simples
+  const renderBarChart = (data, title, color = '#007bff') => {
+    if (!data || data.length === 0) {
+      return <div className="empty-chart">Nenhum dado disponível</div>;
+    }
+
+    const maxValue = Math.max(...data.map(item => item.total || item.value || 0));
+
+    return (
+      <div className="simple-bar-chart">
+        <h4>{title}</h4>
+        <div className="chart-bars">
+          {data.map((item, index) => {
+            const percentage = ((item.total || item.value || 0) / maxValue) * 100;
+            return (
+              <div key={index} className="bar-item">
+                <div className="bar-label">{item.label || item.mes || item._id || 'N/A'}</div>
+                <div className="bar-container">
+                  <div
+                    className="bar-fill"
+                    style={{
+                      width: `${percentage}%`,
+                      backgroundColor: color
+                    }}
+                  ></div>
+                  <span className="bar-value">{item.total || item.value || 0}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // ✅ Função SIMPLIFICADA - apenas dados reais
+  const renderPieChart = (data, title) => {
+    // Verificar se temos dados válidos
+    if (!data || data.length === 0) {
+      return (
+        <div className="empty-chart">
+          <div>📊</div>
+          <div>Nenhum dado disponível</div>
+        </div>
+      );
+    }
+
+    const total = data.reduce((sum, item) => sum + (item.value || item.total || 0), 0);
+
+    if (total === 0) {
+      return (
+        <div className="empty-chart">
+          <div>📊</div>
+          <div>Dados zerados</div>
+        </div>
+      );
+    }
+
+    let currentAngle = 0;
+
+    return (
+      <div className="simple-pie-chart">
+        <h4>{title}</h4>
+        <div className="pie-container">
+          <svg width="150" height="150" viewBox="0 0 150 150">
+            {data.map((item, index) => {
+              const value = item.value || item.total || 0;
+              const percentage = value / total;
+              const angle = percentage * 360;
+              const largeArcFlag = angle > 180 ? 1 : 0;
+
+              // Coordenadas para o segmento do gráfico de pizza
+              const x1 = 75 + 65 * Math.cos(currentAngle * Math.PI / 180);
+              const y1 = 75 + 65 * Math.sin(currentAngle * Math.PI / 180);
+              const x2 = 75 + 65 * Math.cos((currentAngle + angle) * Math.PI / 180);
+              const y2 = 75 + 65 * Math.sin((currentAngle + angle) * Math.PI / 180);
+
+              const pathData = [
+                `M 75 75`,
+                `L ${x1} ${y1}`,
+                `A 65 65 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                `Z`
+              ].join(' ');
+
+              const segment = (
+                <path
+                  key={index}
+                  d={pathData}
+                  fill={getChartColor(index)}
+                  stroke="#fff"
+                  strokeWidth="2"
+                />
+              );
+
+              currentAngle += angle;
+              return segment;
+            })}
+            <circle cx="75" cy="75" r="30" fill="white" />
+          </svg>
+        </div>
+        <div className="pie-legend">
+          {data.map((item, index) => {
+            const value = item.value || item.total || 0;
+            const percentage = total > 0 ? (value / total) * 100 : 0;
+            return (
+              <div key={index} className="legend-item">
+                <span
+                  className="legend-color"
+                  style={{ backgroundColor: getChartColor(index) }}
+                ></span>
+                <span className="legend-label">
+                  {item.label || item._id || 'Item'} - {value} ({Math.round(percentage)}%)
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // ✅ Função para cores dos gráficos
+  const getChartColor = (index) => {
+    const colors = ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#20c997', '#fd7e14', '#e83e8c'];
+    return colors[index % colors.length];
+  };
+
+  // ✅ Função para renderizar métricas
+  const renderMetricCard = (title, value, subtitle, color = 'primary') => {
+    return (
+      <div className={`metric-card ${color}`}>
+        <div className="metric-value">{value}</div>
+        <div className="metric-title">{title}</div>
+        {subtitle && <div className="metric-subtitle">{subtitle}</div>}
+      </div>
+    );
   };
 
   // ✅ CORREÇÃO: Função para criar médico
@@ -378,10 +570,11 @@ const AdminDashboard = () => {
 
   // Função para cancelar consulta (admin)
   const handleCancelarConsultaAdmin = async (agendamentoId) => {
-    if (window.confirm('Tem certeza que deseja cancelar esta consulta?')) {
+    if (window.confirm('Tem certeza que deseja cancelar esta consulta como administrador?')) {
       try {
-        await agendamentoService.cancelarAgendamento(agendamentoId);
-        alert('✅ Consulta cancelada com sucesso!');
+        // ✅ USAR O NOVO ENDPOINT ADMIN
+        await agendamentoService.cancelarAgendamentoAdmin(agendamentoId);
+        alert('✅ Consulta cancelada com sucesso pelo administrador!');
         loadAgendamentos();
       } catch (error) {
         alert('❌ Erro ao cancelar consulta: ' + error.message);
@@ -522,8 +715,11 @@ const AdminDashboard = () => {
                   </thead>
                   <tbody>
                     {medicos.map(medico => (
-                      <tr key={medico._id}>
-                        <td>{medico.usuario?.nome}</td>
+                      <tr key={medico._id} className={!medico.ativo ? 'inactive-row' : ''}>
+                        <td>
+                          {medico.usuario?.nome}
+                          {!medico.ativo && <span style={{ color: '#dc3545', marginLeft: '8px' }}>(Inativo)</span>}
+                        </td>
                         <td>{medico.especialidade}</td>
                         <td>{medico.crm}</td>
                         <td>{medico.consultorio || 'Não informado'}</td>
@@ -531,6 +727,7 @@ const AdminDashboard = () => {
                           <span className={`status-badge ${medico.ativo ? 'active' : 'inactive'}`}>
                             {medico.ativo ? 'Ativo' : 'Inativo'}
                           </span>
+                          {/* ✅ REMOVIDO o texto adicional - o badge já é suficiente */}
                         </td>
                         <td>
                           <button
@@ -697,33 +894,138 @@ const AdminDashboard = () => {
         {/* Relatórios */}
         {activeTab === 'relatorios' && (
           <div className="tab-content">
-            <h2>📈 Relatórios e Estatísticas</h2>
-            <div className="reports-grid">
-              <div className="report-card">
-                <h3>Consultas por Mês</h3>
-                <div className="chart-placeholder">
-                  <p>Gráfico de consultas mensais</p>
-                </div>
-              </div>
-              <div className="report-card">
-                <h3>Médicos Mais Solicitados</h3>
-                <div className="chart-placeholder">
-                  <p>Ranking de médicos</p>
-                </div>
-              </div>
-              <div className="report-card">
-                <h3>Taxa de Comparecimento</h3>
-                <div className="chart-placeholder">
-                  <p>Gráfico de comparecimento</p>
-                </div>
-              </div>
-              <div className="report-card">
-                <h3>Horários Mais Populares</h3>
-                <div className="chart-placeholder">
-                  <p>Distribuição de horários</p>
-                </div>
+            <div className="section-header">
+              <h2>📈 Relatórios e Estatísticas</h2>
+              <div className="periodo-filtros">
+                <select onChange={(e) => loadRelatorios(e.target.value)}>
+                  <option value="7dias">Últimos 7 dias</option>
+                  <option value="30dias">Últimos 30 dias</option>
+                  <option value="90dias">Últimos 90 dias</option>
+                  <option value="1ano">Último ano</option>
+                </select>
               </div>
             </div>
+
+            {/* ✅ MÉTRICAS PRINCIPAIS */}
+            <div className="metrics-grid-relatorios">
+              {renderMetricCard(
+                'Taxa de Comparecimento',
+                relatorios.taxas?.comparecimento ? `${Math.round(relatorios.taxas.comparecimento)}%` : '0%',
+                'Consultas realizadas vs agendadas',
+                'success'
+              )}
+              {renderMetricCard(
+                'Taxa de Cancelamento',
+                relatorios.taxas?.cancelamento ? `${Math.round(relatorios.taxas.cancelamento)}%` : '0%',
+                'Consultas canceladas',
+                'danger'
+              )}
+              {renderMetricCard(
+                'Total Período',
+                relatorios.consultasPorMes?.reduce((sum, item) => sum + item.total, 0) || 0,
+                'Consultas no período',
+                'primary'
+              )}
+            </div>
+
+            <div className="reports-grid">
+              {/* ✅ GRÁFICO: CONSULTAS POR MÊS */}
+              <div className="report-card">
+                <h3>📅 Consultas por Mês</h3>
+                {renderBarChart(
+                  relatorios.consultasPorMes?.map(item => ({
+                    label: item.mes,
+                    total: item.total
+                  })),
+                  'Evolução Mensal',
+                  '#007bff'
+                )}
+              </div>
+
+              {/* ✅ GRÁFICO: MÉDICOS MAIS SOLICITADOS */}
+              <div className="report-card">
+                <h3>👨‍⚕️ Médicos Mais Solicitados</h3>
+                {renderBarChart(
+                  relatorios.medicosMaisSolicitados?.slice(0, 5).map(item => ({
+                    label: item.medico,
+                    total: item.totalConsultas
+                  })),
+                  'Top 5 Médicos',
+                  '#28a745'
+                )}
+              </div>
+
+              {/* ✅ GRÁFICO: HORÁRIOS POPULARES - VERSÃO DIRETA */}
+              <div className="report-card">
+                <h3>⏰ Horários Mais Populares</h3>
+                {renderPieChart(
+                  relatorios.horariosPopulares?.map(item => ({
+                    label: item._id,
+                    value: item.total
+                  })) || [],
+                  'Horários Mais Agendados'
+                )}
+              </div>
+
+              {/* ✅ GRÁFICO: STATUS DAS CONSULTAS - VERSÃO DIRETA */}
+              <div className="report-card">
+                <h3>📊 Status das Consultas</h3>
+                {renderPieChart(
+                  relatorios.consultasPorMes?.length > 0 ? [
+                    {
+                      label: 'Realizadas',
+                      value: relatorios.consultasPorMes.reduce((sum, item) => sum + (item.realizadas || 0), 0)
+                    },
+                    {
+                      label: 'Canceladas',
+                      value: relatorios.consultasPorMes.reduce((sum, item) => sum + (item.canceladas || 0), 0)
+                    },
+                    {
+                      label: 'Agendadas',
+                      value: relatorios.consultasPorMes.reduce((sum, item) => sum + (item.total || 0), 0) -
+                        relatorios.consultasPorMes.reduce((sum, item) => sum + (item.realizadas || 0), 0) -
+                        relatorios.consultasPorMes.reduce((sum, item) => sum + (item.canceladas || 0), 0)
+                    }
+                  ] : [],
+                  'Distribuição por Status'
+                )}
+              </div>
+            </div>
+
+            {/* ✅ TABELA: MÉDICOS MAIS SOLICITADOS (DETALHADA) */}
+            {relatorios.medicosMaisSolicitados && relatorios.medicosMaisSolicitados.length > 0 && (
+              <div className="report-card full-width">
+                <h3>🏆 Ranking de Médicos</h3>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Médico</th>
+                        <th>Especialidade</th>
+                        <th>Total Consultas</th>
+                        <th>Realizadas</th>
+                        <th>Taxa de Sucesso</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {relatorios.medicosMaisSolicitados.map((medico, index) => (
+                        <tr key={index}>
+                          <td>{medico.medico}</td>
+                          <td>{medico.especialidade}</td>
+                          <td>{medico.totalConsultas}</td>
+                          <td>{medico.consultasRealizadas}</td>
+                          <td>
+                            <span className={`status-badge ${medico.taxaSucesso > 80 ? 'active' : medico.taxaSucesso > 60 ? 'warning' : 'danger'}`}>
+                              {Math.round(medico.taxaSucesso)}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
