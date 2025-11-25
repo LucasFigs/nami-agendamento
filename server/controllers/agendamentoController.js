@@ -345,3 +345,57 @@ exports.getAgendamentosMedico = async (req, res) => {
         });
     }
 };
+
+// @desc    Listar todos os agendamentos (apenas admin)
+// @route   GET /api/agendamentos/todos
+// @access  Private/Admin
+exports.getTodosAgendamentos = async (req, res) => {
+    try {
+        const agendamentos = await Agendamento.find()
+            .populate('paciente', 'nome email telefone')
+            .populate('medico', 'especialidade consultorio')
+            .populate({
+                path: 'medico',
+                populate: {
+                    path: 'usuario',
+                    select: 'nome email'
+                }
+            })
+            .sort({ data: -1, horario: -1 });
+
+        // Formatar resposta para o frontend
+        const agendamentosFormatados = agendamentos.map(agendamento => {
+            const dataObj = new Date(agendamento.data);
+            const dataFormatada = dataObj.toISOString().split('T')[0];
+
+            return {
+                _id: agendamento._id,
+                data: dataFormatada,
+                horario: agendamento.horario,
+                status: agendamento.status,
+                tipoConsulta: 'presencial',
+                especialidade: agendamento.especialidade,
+                paciente: {
+                    nome: agendamento.paciente?.nome || 'Paciente não encontrado',
+                    email: agendamento.paciente?.email || 'N/A',
+                    telefone: agendamento.paciente?.telefone || 'N/A'
+                },
+                medico: {
+                    nome: agendamento.medico?.usuario?.nome || 'Médico não encontrado',
+                    especialidade: agendamento.medico?.especialidade || 'N/A'
+                },
+                observacoes: agendamento.observacoes
+            };
+        });
+
+        res.json(agendamentosFormatados);
+
+    } catch (error) {
+        console.error('Erro ao listar todos os agendamentos:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao listar agendamentos',
+            error: error.message
+        });
+    }
+};

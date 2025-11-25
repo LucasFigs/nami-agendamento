@@ -336,3 +336,166 @@ exports.deletarMedico = async (req, res) => {
         });
     }
 };
+
+// @desc    Buscar dados do médico logado
+// @route   GET /api/medicos/meus-dados
+// @access  Private (Médico)
+exports.getMeusDados = async (req, res) => {
+    try {
+        const usuarioId = req.usuario.id;
+        
+        console.log('Buscando dados do médico para usuário:', usuarioId);
+
+        // Buscar médico pelo ID do usuário
+        const medico = await Medico.findOne({ usuario: usuarioId })
+            .populate('usuario', 'nome email telefone');
+
+        if (!medico) {
+            return res.status(404).json({
+                success: false,
+                message: 'Médico não encontrado'
+            });
+        }
+
+        console.log('Médico encontrado:', medico);
+
+        res.json({
+            success: true,
+            data: {
+                nome: medico.usuario.nome,
+                email: medico.usuario.email,
+                telefone: medico.usuario.telefone,
+                especialidade: medico.especialidade,
+                crm: medico.crm,
+                consultorio: medico.consultorio,
+                diasAtendimento: medico.diasAtendimento
+            }
+        });
+
+    } catch (error) {
+        console.error('Erro ao buscar dados do médico:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao buscar dados do médico',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Ativar/desativar médico
+// @route   PUT /api/medicos/:id/toggle-status
+// @access  Private/Admin
+exports.toggleMedicoStatus = async (req, res) => {
+    try {
+        const medicoId = req.params.id;
+        
+        const medico = await Medico.findById(medicoId);
+        
+        if (!medico) {
+            return res.status(404).json({
+                success: false,
+                message: 'Médico não encontrado'
+            });
+        }
+
+        medico.ativo = !medico.ativo;
+        await medico.save();
+
+        const medicoPopulado = await Medico.findById(medicoId)
+            .populate('usuario', 'nome email telefone');
+
+        res.json({
+            success: true,
+            message: `Médico ${medico.ativo ? 'ativado' : 'desativado'} com sucesso`,
+            data: medicoPopulado
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao alterar status do médico',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Criar médico completo (usuário + médico)
+// @route   POST /api/medicos/completo
+// @access  Private/Admin
+exports.criarMedicoCompleto = async (req, res) => {
+    try {
+        const { 
+            nome, 
+            email, 
+            telefone, 
+            senha, 
+            especialidade, 
+            crm, 
+            consultorio, 
+            diasAtendimento 
+        } = req.body;
+
+        // Verificar se usuário já existe
+        const usuarioExiste = await Usuario.findOne({ email });
+        if (usuarioExiste) {
+            return res.status(400).json({
+                success: false,
+                message: 'Usuário já existe com este email'
+            });
+        }
+
+        // Verificar se CRM já existe
+        const crmExiste = await Medico.findOne({ crm });
+        if (crmExiste) {
+            return res.status(400).json({
+                success: false,
+                message: 'CRM já cadastrado'
+            });
+        }
+
+        // Criar usuário primeiro
+        const usuario = await Usuario.create({
+            nome,
+            email,
+            telefone,
+            senha,
+            tipo: 'medico'
+        });
+
+        // Criar médico
+        const medico = await Medico.create({
+            usuario: usuario._id,
+            especialidade,
+            crm,
+            consultorio,
+            diasAtendimento: diasAtendimento || [
+                { diaSemana: 'segunda', horarios: ['08:00', '09:00', '10:00', '14:00', '15:00'] },
+                { diaSemana: 'terca', horarios: ['08:00', '09:00', '10:00', '14:00', '15:00'] },
+                { diaSemana: 'quarta', horarios: ['08:00', '09:00', '10:00', '14:00', '15:00'] },
+                { diaSemana: 'quinta', horarios: ['08:00', '09:00', '10:00', '14:00', '15:00'] },
+                { diaSemana: 'sexta', horarios: ['08:00', '09:00', '10:00', '14:00', '15:00'] }
+            ]
+        });
+
+        const medicoPopulado = await Medico.findById(medico._id)
+            .populate('usuario', 'nome email telefone');
+
+        res.status(201).json({
+            success: true,
+            message: 'Médico criado com sucesso',
+            data: medicoPopulado
+        });
+
+    } catch (error) {
+        // Se der erro, deletar usuário criado
+        if (req.body.email) {
+            await Usuario.findOneAndDelete({ email: req.body.email });
+        }
+        
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao criar médico',
+            error: error.message
+        });
+    }
+};

@@ -1,11 +1,14 @@
+// No arquivo server/routes/agendamentoRoutes.js, adicione:
+
 const express = require('express');
 const { 
     criarAgendamento, 
     listarAgendamentos,
     cancelarAgendamento,
-    listarTodosAgendamentos,
+    listarTodosAgendamentos, // ← ADICIONAR ESTA IMPORT
     getAgendamentosPaciente,
-     getAgendamentosMedico
+    getAgendamentosMedico,
+    getTodosAgendamentos      // ← ADICIONAR ESTA IMPORT
 } = require('../controllers/agendamentoController');
 
 const proteger = require('../middleware/authMiddleware');
@@ -15,13 +18,13 @@ const router = express.Router();
 
 // Rotas para pacientes
 router.post('/', proteger, criarAgendamento);
-router.get('/paciente', proteger, getAgendamentosPaciente); // Paciente vê só os dele
+router.get('/paciente', proteger, getAgendamentosPaciente);
 
 // Rotas para médicos
-router.get('/medico', proteger, getAgendamentosMedico); // ← NOVA ROTA: Médico vê consultas dele
+router.get('/medico', proteger, getAgendamentosMedico);
 
-// Rotas para admin
-router.get('/todos', proteger, adminOnly, listarTodosAgendamentos); // Admin vê tudo
+// ✅ NOVA ROTA: Todos os agendamentos (apenas admin)
+router.get('/todos', proteger, adminOnly, getTodosAgendamentos);
 
 // Rotas comuns
 router.get('/', proteger, listarAgendamentos);
