@@ -331,6 +331,64 @@ const AdminDashboard = () => {
     }
   };
 
+  // ✅ NOVA FUNÇÃO: Para editar usuário
+  const handleEditarUsuario = (usuario) => {
+    setFormAdmin({
+      nome: usuario.nome || '',
+      email: usuario.email || '',
+      telefone: usuario.telefone || '',
+      senha: '' // Senha em branco para não alterar
+    });
+    setModalType('editar-usuario');
+    setShowModal(true);
+    setSelectedAgendamento(usuario._id); // Usamos para guardar o ID do usuário sendo editado
+  };
+
+  // ✅ NOVA FUNÇÃO: Para atualizar usuário
+  const handleUpdateUsuario = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Implementar endpoint de atualização no backend
+      await usuarioService.atualizarUsuario(selectedAgendamento, formAdmin);
+      alert('✅ Usuário atualizado com sucesso!');
+
+      setShowModal(false);
+      setFormAdmin({ nome: '', email: '', telefone: '', senha: '' });
+      setSelectedAgendamento(null);
+
+      loadUsuarios();
+    } catch (error) {
+      alert('❌ Erro ao atualizar usuário: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ ADICIONAR estas funções no AdminDashboard.js
+
+  // Função para ver detalhes da consulta
+  const handleVerDetalhesConsulta = (agendamento) => {
+    // Podemos mostrar um modal com todos os detalhes
+    setSelectedAgendamento(agendamento);
+    setModalType('detalhes-consulta');
+    setShowModal(true);
+  };
+
+  // Função para cancelar consulta (admin)
+  const handleCancelarConsultaAdmin = async (agendamentoId) => {
+    if (window.confirm('Tem certeza que deseja cancelar esta consulta?')) {
+      try {
+        await agendamentoService.cancelarAgendamento(agendamentoId);
+        alert('✅ Consulta cancelada com sucesso!');
+        loadAgendamentos();
+      } catch (error) {
+        alert('❌ Erro ao cancelar consulta: ' + error.message);
+      }
+    }
+  };
+
   return (
     <div className="admin-container">
       <div className="admin-header">
@@ -534,19 +592,24 @@ const AdminDashboard = () => {
                         </span>
                       </td>
                       <td>
-                        <button className="btn-secondary">Editar</button>
+                        <button
+                          className="btn-secondary"
+                          onClick={() => handleEditarUsuario(usuario)}
+                        >
+                          ✏️ Editar
+                        </button>
                         <button
                           className={usuario.ativo ? 'btn-warning' : 'btn-success'}
                           onClick={() => handleToggleUsuarioStatus(usuario._id, usuario.ativo)}
                         >
-                          {usuario.ativo ? 'Desativar' : 'Ativar'}
+                          {usuario.ativo ? '⏸️ Desativar' : '▶️ Ativar'}
                         </button>
                         {usuario.tipo !== 'admin' && (
                           <button
                             className="btn-danger"
                             onClick={() => handleResetarSenha(usuario._id)}
                           >
-                            Resetar Senha
+                            🔑 Resetar Senha
                           </button>
                         )}
                       </td>
@@ -558,7 +621,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Gerenciar Consultas */}
+        {/* Na seção de Gerenciar Consultas */}
         {activeTab === 'consultas' && (
           <div className="tab-content">
             <div className="section-header">
@@ -573,7 +636,6 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* ✅ CORREÇÃO: Adicionar verificação se é array */}
             {Array.isArray(agendamentos) && agendamentos.length > 0 ? (
               <div className="table-container">
                 <table className="data-table">
@@ -600,19 +662,21 @@ const AdminDashboard = () => {
                           </span>
                         </td>
                         <td>
+                          {/* ✅ BOTÕES CORRIGIDOS */}
+                          <button
+                            className="btn-secondary"
+                            onClick={() => handleVerDetalhesConsulta(agendamento)}
+                          >
+                            👁️ Detalhes
+                          </button>
+
                           {agendamento.status === 'agendado' && (
-                            <>
-                              <button className="btn-secondary">Detalhes</button>
-                              <button
-                                className="btn-danger"
-                                onClick={() => handleCancelarAgendamento(agendamento._id)}
-                              >
-                                Cancelar
-                              </button>
-                            </>
-                          )}
-                          {agendamento.status !== 'agendado' && (
-                            <button className="btn-secondary">Ver Detalhes</button>
+                            <button
+                              className="btn-danger"
+                              onClick={() => handleCancelarConsultaAdmin(agendamento._id)}
+                            >
+                              ❌ Cancelar
+                            </button>
                           )}
                         </td>
                       </tr>
@@ -621,7 +685,6 @@ const AdminDashboard = () => {
                 </table>
               </div>
             ) : (
-              /* ✅ CORREÇÃO: Estado vazio */
               <div className="empty-state">
                 <div className="empty-icon">📅</div>
                 <h3>Nenhuma consulta encontrada</h3>
@@ -1105,6 +1168,139 @@ const AdminDashboard = () => {
                     </button>
                   </div>
                 </form>
+              </>
+            )}
+
+            {modalType === 'editar-usuario' && (
+              <>
+                <h3>✏️ Editar Usuário</h3>
+                <form onSubmit={handleUpdateUsuario}>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label>Nome Completo *</label>
+                      <input
+                        type="text"
+                        value={formAdmin.nome}
+                        onChange={(e) => setFormAdmin(prev => ({ ...prev, nome: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Email *</label>
+                      <input
+                        type="email"
+                        value={formAdmin.email}
+                        onChange={(e) => setFormAdmin(prev => ({ ...prev, email: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Telefone</label>
+                      <input
+                        type="tel"
+                        value={formAdmin.telefone}
+                        onChange={(e) => setFormAdmin(prev => ({ ...prev, telefone: e.target.value }))}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Nova Senha (deixe em branco para manter atual)</label>
+                      <input
+                        type="password"
+                        value={formAdmin.senha}
+                        onChange={(e) => setFormAdmin(prev => ({ ...prev, senha: e.target.value }))}
+                        placeholder="Deixe em branco para não alterar"
+                      />
+                    </div>
+                  </div>
+                  <div className="modal-actions">
+                    <button type="submit" className="primary-button" disabled={loading}>
+                      {loading ? 'Atualizando...' : '💾 Atualizar Usuário'}
+                    </button>
+                    <button type="button" className="secondary-button"
+                      onClick={() => {
+                        setShowModal(false);
+                        setSelectedAgendamento(null);
+                      }}>
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+
+            {/* Modal de Detalhes da Consulta */}
+            {modalType === 'detalhes-consulta' && selectedAgendamento && (
+              <>
+                <h3>👁️ Detalhes da Consulta</h3>
+                <div className="detalhes-consulta">
+                  <div className="detalhes-grid">
+                    <div className="detalhe-item">
+                      <label>Paciente:</label>
+                      <span>{selectedAgendamento.paciente?.nome || 'N/A'}</span>
+                    </div>
+                    <div className="detalhe-item">
+                      <label>Email do Paciente:</label>
+                      <span>{selectedAgendamento.paciente?.email || 'N/A'}</span>
+                    </div>
+                    <div className="detalhe-item">
+                      <label>Telefone:</label>
+                      <span>{selectedAgendamento.paciente?.telefone || 'N/A'}</span>
+                    </div>
+                    <div className="detalhe-item">
+                      <label>Médico:</label>
+                      <span>{selectedAgendamento.medico?.nome || 'N/A'}</span>
+                    </div>
+                    <div className="detalhe-item">
+                      <label>Especialidade:</label>
+                      <span>{selectedAgendamento.especialidade || 'N/A'}</span>
+                    </div>
+                    <div className="detalhe-item">
+                      <label>Data:</label>
+                      <span>
+                        {selectedAgendamento.data ?
+                          new Date(selectedAgendamento.data).toLocaleDateString('pt-BR') : 'N/A'
+                        }
+                      </span>
+                    </div>
+                    <div className="detalhe-item">
+                      <label>Horário:</label>
+                      <span>{selectedAgendamento.horario || 'N/A'}</span>
+                    </div>
+                    <div className="detalhe-item">
+                      <label>Status:</label>
+                      <span className="status-badge" style={{ backgroundColor: getStatusColor(selectedAgendamento.status) }}>
+                        {selectedAgendamento.status || 'N/A'}
+                      </span>
+                    </div>
+                    {selectedAgendamento.observacoes && (
+                      <div className="detalhe-item full-width">
+                        <label>Observações:</label>
+                        <span>{selectedAgendamento.observacoes}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="modal-actions">
+                    {selectedAgendamento.status === 'agendado' && (
+                      <button
+                        className="btn-danger"
+                        onClick={() => {
+                          handleCancelarConsultaAdmin(selectedAgendamento._id);
+                          setShowModal(false);
+                        }}
+                      >
+                        ❌ Cancelar Consulta
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => setShowModal(false)}
+                    >
+                      Fechar
+                    </button>
+                  </div>
+                </div>
               </>
             )}
           </div>

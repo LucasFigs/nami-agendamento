@@ -427,3 +427,38 @@
     text-align: center;
   }
 }
+
+/* Estilos para o modal de detalhes */
+.detalhes-consulta {
+  max-width: 600px;
+}
+
+.detalhes-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.detalhe-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.detalhe-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.detalhe-item label {
+  font-weight: bold;
+  color: #555;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.detalhe-item span {
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
