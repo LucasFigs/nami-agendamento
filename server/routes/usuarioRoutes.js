@@ -11,7 +11,8 @@ const {
     criarAdmin,            
     toggleUsuarioStatus,   
     resetarSenha,
-    atualizarUsuario
+    atualizarUsuario,
+    getEstatisticas
 } = require('../controllers/usuarioController');
 
 const proteger = require('../middleware/authMiddleware');
@@ -29,6 +30,8 @@ router.put('/alterar-senha', proteger, alterarSenha);
 // ✅ ROTAS ADMIN - REORGANIZAR: rotas específicas PRIMEIRO
 router.get('/todos', proteger, adminOnly, getTodosUsuarios);
 router.post('/admin', proteger, adminOnly, criarAdmin);
+// Adicione esta rota junto com as outras rotas admin
+router.get('/estatisticas', proteger, adminOnly, getEstatisticas);
 
 // ✅ ROTAS COM :id - Colocar DEPOIS das rotas específicas
 router.put('/:id/toggle-status', proteger, adminOnly, toggleUsuarioStatus);

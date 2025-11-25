@@ -87,4 +87,34 @@ async reagendarAgendamento(agendamentoId, novaData, novoHorario) {
   }
 },
 
+// Cancelar agendamento (admin - pode cancelar qualquer um)
+async cancelarAgendamentoAdmin(id) {
+  try {
+    const response = await api.put(`/agendamentos/${id}/cancelar-admin`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Erro ao cancelar agendamento' };
+  }
+},
+
+// Buscar relatórios
+async getRelatorios(periodo = '30dias') {
+  try {
+    const response = await api.get(`/agendamentos/relatorios?periodo=${periodo}`);
+    return response.data.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Erro ao buscar relatórios' };
+  }
+},
+
+// Buscar estatísticas de status
+async getEstatisticasStatus(periodo = '30dias') {
+  try {
+    const response = await api.get(`/agendamentos/estatisticas-status?periodo=${periodo}`);
+    return response.data.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Erro ao buscar estatísticas de status' };
+  }
+},
+
 };

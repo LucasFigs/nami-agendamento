@@ -309,6 +309,18 @@ exports.toggleUsuarioStatus = async (req, res) => {
         usuario.ativo = !usuario.ativo;
         await usuario.save();
 
+        // ✅ SINCRONIZAR: Se for usuário médico, atualizar também o médico
+        if (usuario.tipo === 'medico') {
+            const Medico = require('../models/Medico');
+            const medico = await Medico.findOne({ usuario: usuarioId });
+            
+            if (medico) {
+                medico.ativo = usuario.ativo;
+                await medico.save();
+                console.log(`✅ Status do médico sincronizado: ${medico.ativo ? 'ativado' : 'desativado'}`);
+            }
+        }
+
         res.json({
             success: true,
             message: `Usuário ${usuario.ativo ? 'ativado' : 'desativado'} com sucesso`,
@@ -461,6 +473,89 @@ exports.atualizarUsuario = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Erro ao atualizar usuário',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Obter estatísticas gerais do sistema (admin)
+// @route   GET /api/usuarios/estatisticas
+// @access  Private/Admin
+exports.getEstatisticas = async (req, res) => {
+    try {
+        console.log('📊 Buscando estatísticas do sistema...');
+
+        // Contar usuários por tipo
+        const totalUsuarios = await Usuario.countDocuments();
+        const totalPacientes = await Usuario.countDocuments({ tipo: 'paciente' });
+        const totalMedicos = await Usuario.countDocuments({ tipo: 'medico' });
+        const totalAdmins = await Usuario.countDocuments({ tipo: 'admin' });
+
+        // Contar usuários ativos/inativos
+        const usuariosAtivos = await Usuario.countDocuments({ ativo: true });
+        const usuariosInativos = await Usuario.countDocuments({ ativo: false });
+
+        // Buscar dados de agendamentos
+        const Agendamento = require('../models/Agendamento');
+        const totalConsultas = await Agendamento.countDocuments();
+        
+        // Consultas hoje
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        const amanha = new Date(hoje);
+        amanha.setDate(amanha.getDate() + 1);
+        
+        const consultasHoje = await Agendamento.countDocuments({
+            data: {
+                $gte: hoje,
+                $lt: amanha
+            },
+            status: { $in: ['agendado', 'confirmado'] }
+        });
+
+        // Consultas por status
+        const consultasAgendadas = await Agendamento.countDocuments({ status: 'agendado' });
+        const consultasRealizadas = await Agendamento.countDocuments({ status: 'realizado' });
+        const consultasCanceladas = await Agendamento.countDocuments({ status: 'cancelado' });
+
+        // Buscar dados de médicos
+        const Medico = require('../models/Medico');
+        const medicosAtivos = await Medico.countDocuments({ ativo: true });
+        const medicosInativos = await Medico.countDocuments({ ativo: false });
+
+        console.log('✅ Estatísticas calculadas com sucesso');
+
+        res.json({
+            success: true,
+            data: {
+                usuarios: {
+                    total: totalUsuarios,
+                    pacientes: totalPacientes,
+                    medicos: totalMedicos,
+                    admins: totalAdmins,
+                    ativos: usuariosAtivos,
+                    inativos: usuariosInativos
+                },
+                consultas: {
+                    total: totalConsultas,
+                    hoje: consultasHoje,
+                    agendadas: consultasAgendadas,
+                    realizadas: consultasRealizadas,
+                    canceladas: consultasCanceladas
+                },
+                medicos: {
+                    ativos: medicosAtivos,
+                    inativos: medicosInativos,
+                    total: medicosAtivos + medicosInativos
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Erro ao buscar estatísticas:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao buscar estatísticas',
             error: error.message
         });
     }

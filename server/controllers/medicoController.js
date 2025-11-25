@@ -6,9 +6,10 @@ const Usuario = require('../models/Usuario');
 // @access  Public
 exports.listarMedicos = async (req, res) => {
     try {
-        const medicos = await Medico.find({ ativo: true })
+        // ✅ REMOVER o filtro { ativo: true } para mostrar TODOS os médicos
+        const medicos = await Medico.find() // ← Removido o filtro
             .populate('usuario', 'nome email telefone')
-        //.select('-diasAtendimento.horarios'); // Não retorna horários específicos por segurança
+            .sort({ ativo: -1, nome: 1 }); // ✅ Ordenar por ativo primeiro
 
         res.json({
             success: true,
@@ -389,7 +390,8 @@ exports.toggleMedicoStatus = async (req, res) => {
     try {
         const medicoId = req.params.id;
         
-        const medico = await Medico.findById(medicoId);
+        const medico = await Medico.findById(medicoId)
+            .populate('usuario', 'nome email ativo');
         
         if (!medico) {
             return res.status(404).json({
@@ -398,11 +400,18 @@ exports.toggleMedicoStatus = async (req, res) => {
             });
         }
 
+        // ✅ SINCRONIZAR: Alterar status do médico E do usuário
         medico.ativo = !medico.ativo;
         await medico.save();
 
+        // ✅ ATUALIZAR também o status do usuário associado
+        if (medico.usuario) {
+            medico.usuario.ativo = medico.ativo;
+            await medico.usuario.save();
+        }
+
         const medicoPopulado = await Medico.findById(medicoId)
-            .populate('usuario', 'nome email telefone');
+            .populate('usuario', 'nome email telefone ativo');
 
         res.json({
             success: true,
