@@ -1,259 +1,177 @@
-# 🏥 NAMI Agendamento - Sistema de Agendamentos Médicos
+# 🚀 NAMI Backend - API REST
 
-## 📋 Sobre o Projeto
-Sistema completo de agendamentos médicos desenvolvido em Node.js com Express e MongoDB. Permite o gerenciamento de usuários, médicos e agendamentos de consultas.
+API Node.js/Express do sistema NAMI Agendamento, fornecendo endpoints seguros para gestão de agendamentos, usuários e relatórios.
 
-## 🚀 Tecnologias Utilizadas
-- **Backend:** Node.js, Express.js
-- **Banco de Dados:** MongoDB Atlas
-- **Autenticação:** JWT (JSON Web Tokens)
-- **Segurança:** Bcrypt para hash de senhas
-- **CORS:** Habilitado para integração frontend
+## 🏗️ Arquitetura
 
----
-
-## 🧪 DEMONSTRAÇÃO NA APRESENTAÇÃO
-
-### 📋 Fluxo de Demonstração Recomendado
-
-#### 1. 🔑 CONFIGURAÇÃO INICIAL
-```bash
-# Iniciar servidor
-npm start
-
-# Verificar status da API
-GET http://localhost:5000/
+```
+Express.js → Middlewares → Routes → Controllers → Models → MongoDB
 ```
 
-#### 2. 👥 CADASTRO E AUTENTICAÇÃO
+## 📡 Endpoints da API
 
-**Registrar Paciente:**
-```http
-POST http://localhost:5000/api/auth/registro
-Content-Type: application/json
+### 🔐 Autenticação
+- `POST /api/auth/registro` - Registrar usuário
+- `POST /api/auth/login` - Login
 
-{
-  "nome": "João Silva",
-  "email": "joao.silva@unifor.br",
-  "senha": "123456",
-  "tipo": "paciente",
-  "matricula": "20230012345",
-  "telefone": "(85) 99999-9999"
-}
-```
+### 👥 Usuários
+- `GET /api/usuarios/meus-dados` - Meus dados
+- `PUT /api/usuarios/perfil` - Atualizar perfil
+- `PUT /api/usuarios/alterar-senha` - Alterar senha
 
-**Login do Paciente:**
-```http
-POST http://localhost:5000/api/auth/login
-Content-Type: application/json
+### 🏥 Médicos
+- `GET /api/medicos` - Listar médicos
+- `GET /api/medicos/especialidade/:especialidade` - Filtrar por especialidade
+- `GET /api/medicos/:id/horarios-disponiveis` - Horários disponíveis
 
-{
-  "email": "joao.silva@unifor.br",
-  "senha": "123456"
-}
-```
+### 📅 Agendamentos
+- `POST /api/agendamentos` - Criar agendamento
+- `GET /api/agendamentos/paciente` - Agendamentos do paciente
+- `GET /api/agendamentos/medico` - Agendamentos do médico
+- `PUT /api/agendamentos/:id/cancelar` - Cancelar agendamento
 
-**💡 Guarde o token retornado para as próximas requisições!**
+### 📊 Admin
+- `GET /api/agendamentos/todos` - Todos agendamentos (admin)
+- `GET /api/usuarios/todos` - Todos usuários (admin)
+- `GET /api/agendamentos/relatorios` - Relatórios
 
-#### 3. 🩺 GERENCIAMENTO DE MÉDICOS (Como Admin)
+## 🗄️ Modelos de Dados
 
-**Login como Administrador:**
-```http
-POST http://localhost:5000/api/auth/login
-Content-Type: application/json
-
-{
-  "email": "admin@nami.com",
-  "senha": "admin123"
-}
-```
-
-**Criar Médico:**
-```http
-POST http://localhost:5000/api/medicos
-Content-Type: application/json
-Authorization: Bearer [TOKEN_ADMIN]
-
-{
-  "usuarioId": "[ID_DO_USUARIO_MEDICO]",
-  "especialidade": "Cardiologista",
-  "crm": "CRM/CE 12345",
-  "consultorio": "Sala 201",
-  "diasAtendimento": [
-    {
-      "diaSemana": "segunda",
-      "horarios": ["08:00", "09:00", "10:00", "14:00", "15:00"]
-    },
-    {
-      "diaSemana": "quarta", 
-      "horarios": ["08:00", "09:00", "10:00", "14:00", "15:00"]
-    }
-  ]
-}
-```
-
-**Listar Médicos Disponíveis:**
-```http
-GET http://localhost:5000/api/medicos
-Authorization: Bearer [TOKEN_PACIENTE]
-```
-
-#### 4. 📅 SISTEMA DE AGENDAMENTOS
-
-**Ver Horários Disponíveis de um Médico:**
-```http
-GET http://localhost:5000/api/medicos/[MEDICO_ID]/horarios-disponiveis?data=2024-01-20
-Authorization: Bearer [TOKEN_PACIENTE]
-```
-
-**Criar Agendamento:**
-```http
-POST http://localhost:5000/api/agendamentos
-Content-Type: application/json
-Authorization: Bearer [TOKEN_PACIENTE]
-
-{
-  "medicoId": "[MEDICO_ID]",
-  "data": "2024-01-20",
-  "horario": "09:00"
-}
-```
-
-**Listar Meus Agendamentos:**
-```http
-GET http://localhost:5000/api/agendamentos
-Authorization: Bearer [TOKEN_PACIENTE]
-```
-
-**Cancelar Agendamento:**
-```http
-PUT http://localhost:5000/api/agendamentos/[AGENDAMENTO_ID]/cancelar
-Authorization: Bearer [TOKEN_PACIENTE]
-```
-
-#### 5. 👨‍💼 PAINEL ADMINISTRATIVO
-
-**Listar Todos os Usuários:**
-```http
-GET http://localhost:5000/api/usuarios
-Authorization: Bearer [TOKEN_ADMIN]
-```
-
-**Listar Todos os Agendamentos:**
-```http
-GET http://localhost:5000/api/agendamentos/todos
-Authorization: Bearer [TOKEN_ADMIN]
-```
-
-**Buscar Médicos por Especialidade:**
-```http
-GET http://localhost:5000/api/medicos/especialidade/Cardiologista
-Authorization: Bearer [TOKEN_PACIENTE]
-```
-
----
-
-## 🎯 CENÁRIOS PARA DEMONSTRAR
-
-### ✅ **Cenário 1: Fluxo Completo do Paciente**
-1. Registrar novo paciente
-2. Fazer login
-3. Listar médicos disponíveis
-4. Ver horários de um médico
-5. Fazer agendamento
-6. Listar seus agendamentos
-7. Cancelar um agendamento
-
-### ✅ **Cenário 2: Gestão Administrativa**
-1. Login como admin
-2. Criar novo médico
-3. Listar todos os usuários
-4. Visualizar todos os agendamentos
-5. Gerenciar médicos
-
-### ✅ **Cenário 3: Validações do Sistema**
-1. Tentar agendar horário ocupado
-2. Tentar criar médico sem ser admin
-3. Tentar acessar dados de outro usuário
-4. Testar validação de dados
-
----
-
-## 🔧 COMANDOS RÁPIDOS PARA APRESENTAÇÃO
-
-### Inicialização Rápida:
-```bash
-# Terminal 1 - Backend
-npm start
-
-# Terminal 2 - Criar dados de teste
-node scripts/seedAdmin.js
-```
-
-### URLs para Teste Rápido:
-```bash
-# Status da API
-http://localhost:5000/
-
-# Documentação (se houver)
-http://localhost:5000/api/docs
-```
-
-### Dados de Teste Pré-configurados:
+### Usuario
 ```javascript
-// Admin (já criado pelo seed)
-Email: admin@nami.com
-Senha: admin123
-
-// Paciente de teste (criar durante demo)
-Email: demo.paciente@unifor.br
-Senha: 123456
-
-// Médico de teste (criar durante demo)
-Especialidade: Cardiologista
-CRM: CRM/CE 99999
+{
+  nome: String,
+  email: String (unique),
+  senha: String (hashed),
+  tipo: ['paciente', 'medico', 'admin'],
+  telefone: String,
+  ativo: Boolean
+}
 ```
 
----
+### Medico
+```javascript
+{
+  usuario: ObjectId (ref: Usuario),
+  especialidade: String,
+  crm: String (unique),
+  consultorio: String,
+  diasAtendimento: [{
+    diaSemana: String,
+    horarios: [String]
+  }]
+}
+```
 
-## 🚨 PONTOS CHAVE PARA DESTACAR
+### Agendamento
+```javascript
+{
+  paciente: ObjectId (ref: Usuario),
+  medico: ObjectId (ref: Medico),
+  data: Date,
+  horario: String,
+  status: ['agendado', 'confirmado', 'realizado', 'cancelado']
+}
+```
 
-### 🔒 **Segurança**
-- Autenticação JWT
-- Hash de senhas com bcrypt
-- Middleware de proteção de rotas
-- Validação de permissões
+## 🔧 Instalação e Desenvolvimento
 
-### ⚡ **Funcionalidades**
-- Sistema completo de agendamentos
-- Gestão de múltiplos tipos de usuário
-- Verificação de conflitos de horário
-- API RESTful bem estruturada
-
-### 🏗️ **Arquitetura**
-- Padrão MVC
-- Código modular e escalável
-- Tratamento de erros robusto
-- Preparado para integração com frontend
-
----
-
-## 📞 SUPORTE DURANTE A APRESENTAÇÃO
-
-### Comandos de Emergência:
 ```bash
-# Se der erro de porta
-npx kill-port 5000
+# Instalar dependências
+npm install
 
-# Se der erro de MongoDB
-# Verificar string de conexão no .env
+# Desenvolvimento (com nodemon)
+npm run dev
 
-# Recriar dados de teste
-node scripts/seedAdmin.js
+# Produção
+npm start
+
+# Popular banco com dados de teste
+npm run seed
 ```
 
-### Troubleshooting Rápido:
-- **Token inválido:** Fazer login novamente
-- **Horário ocupado:** Escolher outro horário
-- **Erro 403:** Tentar acessar rota sem permissão
-- **Erro 404:** Verificar ID do recurso
+## ⚙️ Configuração
+
+### Variáveis de Ambiente (.env)
+```env
+MONGODB_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/nami
+JWT_SECRET=seu_jwt_secret_super_seguro_aqui
+PORT=5000
+NODE_ENV=development
+```
+
+### Estrutura do Projeto
+```
+server/
+├── config/         # Configurações (database)
+├── controllers/    # Lógica dos endpoints
+├── middleware/     # Autenticação, admin, etc.
+├── models/         # Modelos MongoDB
+├── routes/         # Definição de rotas
+├── scripts/        # Scripts (seed)
+└── server.js       # Entry point
+```
+
+## 🔒 Segurança
+
+- **JWT Authentication** - Tokens com expiration
+- **Password Hashing** - bcryptjs
+- **CORS** - Configurado para frontend
+- **Input Validation** - Nos controllers
+- **Rate Limiting** - Prevenção de ataques
+
+## 🧪 Testes
+
+```bash
+# Executar testes
+npm test
+
+# Testes com coverage
+npm run test:coverage
+```
+
+## 📊 Monitoramento
+
+- Logs estruturados
+- Error tracking
+- Performance monitoring
+- Health checks
+
+## 🚀 Deploy
+
+### Produção
+```bash
+NODE_ENV=production npm start
+```
+
+### Variáveis de Produção
+```env
+NODE_ENV=production
+MONGODB_URI=sua_uri_de_producao
+JWT_SECRET=seu_jwt_secret_forte
+PORT=5000
+```
+
+## 📈 Performance
+
+- Conexão pooling MongoDB
+- Compression middleware
+- Helmet.js security
+- Query optimization
+
+## 🔍 Debugging
+
+```bash
+# Desenvolvimento com debug
+DEBUG=nami:* npm run dev
+
+# Logs estruturados
+NODE_ENV=development npm start
+```
+
+## 🤝 Contribuição
+
+1. Siga o padrão de código
+2. Adicione testes para novas funcionalidades
+3. Documente novos endpoints
+4. Atualize o README se necessário

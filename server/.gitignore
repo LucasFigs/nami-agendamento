@@ -1,9 +1,13 @@
+# Dependencies
+/node_modules
+
+# Environment variables
+.env
+.env.local
+
 # Logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
+logs/
 
 # Runtime data
 pids
@@ -12,8 +16,7 @@ pids
 *.pid.lock
 
 # Coverage directory used by tools like istanbul
-coverage
-*.lcov
+coverage/
 
 # nyc test coverage
 .nyc_output
@@ -31,23 +34,13 @@ bower_components
 build/Release
 
 # Dependency directories
-node_modules/
 jspm_packages/
-
-# TypeScript cache
-*.tsbuildinfo
 
 # Optional npm cache directory
 .npm
 
 # Optional eslint cache
 .eslintcache
-
-# Microbundle cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
 
 # Optional REPL history
 .node_repl_history
@@ -59,25 +52,18 @@ jspm_packages/
 .yarn-integrity
 
 # dotenv environment variables file
-.env
 .env.test
-.env.production
-.env.local
 
 # parcel-bundler cache
 .cache
 .parcel-cache
 
-# Next.js build output
+# next.js build output
 .next
 
-# Nuxt.js build / generate output
+# nuxt.js build / generate output
 .nuxt
 dist
-
-# Gatsby files
-.cache/
-public
 
 # Storybook build outputs
 .out
@@ -101,12 +87,3 @@ temp/
 .Trashes
 ehthumbs.db
 Thumbs.db
-
-# Deployment directories
-/dist
-/build
-
-# Local environment files
-.env.development.local
-.env.test.local
-.env.production.local

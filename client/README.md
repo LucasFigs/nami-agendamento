@@ -1,54 +1,127 @@
-# 🏥 NAMI - Sistema de Agendamento de Consultas
+# 🎨 NAMI Frontend - Interface do Usuário
 
-Frontend completo do sistema de agendamento de consultas desenvolvido para a UNIFOR.
+Frontend React.js do sistema NAMI Agendamento, oferecendo interfaces responsivas e intuitivas para pacientes, médicos e administradores.
 
-## 🎯 Status do Projeto
+## 🎯 Páginas e Rotas
 
-### ✅ **O QUE JÁ ESTÁ FUNCIONAL:**
-- **Telas completas e responsivas** - Design moderno seguindo as cores da UNIFOR
-- **Sistema de navegação** - Entre todas as telas sem recarregar a página
-- **Validações de formulário** - Campos obrigatórios, confirmação de senha, etc.
-- **Fluxo completo do paciente** - Login → Cadastro → Dashboard
+### 🔐 Autenticação
+- `/login` - Login geral
+- `/login-medico` - Login médico/admin
+- `/cadastro` - Cadastro de pacientes
 
-### 🚧 **O QUE AINDA É SIMULAÇÃO:**
-- **Dados estáticos** - Login/Cadastro não persistem no banco
-- **Agendamentos mockados** - Lista fixa de consultas no dashboard
-- **Sem integração com API** - Todas as ações são simuladas
+### 🏠 Dashboards
+- `/dashboard` - Dashboard paciente
+- `/dashboard-medico` - Dashboard médico
+- `/admin` - Painel administrativo
 
-## 📱 Telas Implementadas
+### 📅 Agendamentos
+- `/agendamento` - Novo agendamento
+- `/agendamentos` - Meus agendamentos (paciente)
+- `/agenda-medico` - Agenda médica
 
-### 1. **Login** (`/login`)
-- Campos: Email e Senha
-- Funcionalidades:
-  - ✅ Validação de campos obrigatórios
-  - ✅ "Esqueci minha senha" com modal
-  - ✅ Navegação para cadastro
-  - ⚠️ **SIMULAÇÃO**: Qualquer email/senha funciona
+### 👤 Perfis
+- `/perfil` - Perfil paciente
+- `/perfil-medico` - Perfil médico
 
-### 2. **Pré-Cadastro** (`/cadastro`)
-- Campos: Nome, Matrícula, Data Nascimento, Email, Telefone, Senha
-- Funcionalidades:
-  - ✅ Validação de todos os campos
-  - ✅ Confirmação de senha
-  - ✅ Data picker nativo
-  - ⚠️ **SIMULAÇÃO**: Dados não são salvos
+### 📊 Relatórios
+- `/relatorios-medico` - Relatórios médico
 
-### 3. **Dashboard** (`/dashboard`)
-- Cards principais:
-  - 📅 Agendar Consulta
-  - 📋 Meus Agendamentos  
-  - 📊 Histórico
-- Funcionalidades:
-  - ✅ Lista de agendamentos com status
-  - ✅ Estatísticas do paciente
-  - ✅ Menu inferior de navegação
-  - ⚠️ **SIMULAÇÃO**: Dados mockados
+## 🛠️ Tecnologias
 
-## 🎨 Design System
+- **React 18** - Framework principal
+- **React Router DOM** - Roteamento
+- **CSS Modules** - Estilização
+- **Axios** - Cliente HTTP
+- **Context API** - Gerenciamento de estado
 
-### **Cores Principais:**
-```css
---unifor-blue: #003366;    /* Primária */
---unifor-gold: #FFD700;    /* Secundária */
---success: #28a745;        /* Confirmações */
---danger: #dc3545;         /* Erros/Cancelar */
+## 📦 Instalação e Desenvolvimento
+
+```bash
+# Instalar dependências
+npm install
+
+# Desenvolvimento
+npm start
+
+# Build de produção
+npm run build
+
+# Executar testes
+npm test
+```
+
+## 🎨 Estrutura de Componentes
+
+```
+src/
+├── components/     # Componentes reutilizáveis
+├── pages/         # Páginas completas
+├── services/      # Serviços API
+├── styles/        # Estilos globais
+└── App.js         # Componente raiz
+```
+
+## 🔌 Integração com API
+
+O frontend consome a API através dos serviços em `src/services/`:
+
+- `authService.js` - Autenticação
+- `agendamentoService.js` - Agendamentos
+- `medicoService.js` - Dados médicos
+- `usuarioService.js` - Dados usuários
+
+## 🎭 Variáveis de Ambiente
+
+Crie um arquivo `.env` na raiz do client:
+
+```env
+REACT_APP_API_URL=http://localhost:5000/api
+REACT_APP_ENV=development
+```
+
+## 🧪 Testes
+
+```bash
+# Executar testes
+npm test
+
+# Executar testes com coverage
+npm test -- --coverage
+```
+
+## 📱 Responsividade
+
+O sistema é totalmente responsivo, funcionando em:
+- 📱 Mobile (320px+)
+- 📟 Tablet (768px+)
+- 💻 Desktop (1024px+)
+
+## 🚀 Deploy
+
+### Build de Produção
+```bash
+npm run build
+```
+
+### Servir Build
+```bash
+# Usando serve
+npx serve -s build
+
+# Ou usando express estático
+node server-static.js
+```
+
+## 📊 Performance
+
+- Code splitting automático
+- Lazy loading de rotas
+- Otimização de imagens
+- Bundle analysis com webpack-bundle-analyzer
+
+## 🔒 Segurança
+
+- Validação de formulários
+- Proteção de rotas autenticadas
+- Sanitização de inputs
+- Tokens JWT com expiration
