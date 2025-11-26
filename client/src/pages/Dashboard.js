@@ -11,7 +11,7 @@ const Dashboard = () => {
     consultasHoje: 0,
     proximaConsulta: 'Nenhuma',
     totalRealizadas: 0,
-    totalFaltas: 0
+    totalCanceladas: 0
   });
   const [loading, setLoading] = useState(true);
   const [activeMenu, setActiveMenu] = useState('home');
@@ -25,31 +25,26 @@ const Dashboard = () => {
     try {
       setLoading(true);
 
-      // Carregar dados do usuário
       const userData = authService.getCurrentUser();
       setUser(userData);
 
-      // Carregar agendamentos
       const agendamentos = await agendamentoService.getAgendamentosPaciente();
-      setProximosAgendamentos(agendamentos.slice(0, 3)); // Mostrar apenas 3 próximos
+      setProximosAgendamentos(agendamentos.slice(0, 3));
 
-      // Calcular estatísticas
       calcularEstatisticas(agendamentos);
 
     } catch (error) {
       console.error('Erro ao carregar dashboard:', error);
-      alert('Erro ao carregar dados do dashboard');
+      alert('❌ Erro ao carregar dados do dashboard');
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Função para formatar data sem problemas de timezone
   const formatarDataLocal = (dataString) => {
     try {
-      // Divide a string YYYY-MM-DD e cria a data no timezone local
       const [ano, mes, dia] = dataString.split('-').map(Number);
-      const dataLocal = new Date(ano, mes - 1, dia); // mes - 1 porque JavaScript usa 0-11
+      const dataLocal = new Date(ano, mes - 1, dia);
       return dataLocal.toLocaleDateString('pt-BR');
     } catch (error) {
       console.error('Erro ao formatar data:', dataString, error);
@@ -58,53 +53,26 @@ const Dashboard = () => {
   };
 
   const calcularEstatisticas = (agendamentos) => {
-    console.log('📊 CALCULANDO ESTATÍSTICAS - Agendamentos:', agendamentos);
-
-    // Data de HOJE em formato ISO (YYYY-MM-DD)
     const hoje = new Date();
     const hojeISO = hoje.toISOString().split('T')[0];
 
-    console.log('📅 HOJE (ISO):', hojeISO);
-
-    // Consultas de HOJE - comparação direta por string ISO
     const consultasHoje = agendamentos.filter(ag => {
       if (!ag.data) return false;
-
-      // A data já vem no formato YYYY-MM-DD do backend
-      const isHoje = ag.data === hojeISO;
-      const isAgendado = ag.status === 'agendado';
-
-      console.log(`🔍 ${ag.medico?.nome} - Data: ${ag.data} - Hoje: ${isHoje} - Status: ${ag.status}`);
-
-      return isHoje && isAgendado;
+      return ag.data === hojeISO && ag.status === 'agendado';
     }).length;
 
-    console.log('🎯 CONSULTAS HOJE ENCONTRADAS:', consultasHoje);
-
-    // PRÓXIMA consulta (hoje ou futura) - comparação por string ISO
     const proxima = agendamentos
       .filter(ag => {
         if (!ag.data || ag.status !== 'agendado') return false;
-
-        // Comparação por string ISO (YYYY-MM-DD)
         return ag.data >= hojeISO;
       })
-      .sort((a, b) => a.data.localeCompare(b.data))[0]; // Ordena por string
-
-    if (proxima) {
-      console.log('✅ PRÓXIMA CONSULTA:', {
-        medico: proxima.medico?.nome,
-        data: proxima.data,
-        dataFormatada: new Date(proxima.data).toLocaleDateString('pt-BR'),
-        horario: proxima.horario
-      });
-    }
+      .sort((a, b) => a.data.localeCompare(b.data))[0];
 
     const totalRealizadas = agendamentos.filter(ag =>
       ag.status === 'realizado'
     ).length;
 
-    const totalFaltas = agendamentos.filter(ag =>
+    const totalCanceladas = agendamentos.filter(ag =>
       ag.status === 'cancelado'
     ).length;
 
@@ -114,7 +82,7 @@ const Dashboard = () => {
         `${formatarDataLocal(proxima.data)} - ${proxima.horario}` :
         'Nenhuma',
       totalRealizadas,
-      totalFaltas
+      totalCanceladas
     });
   };
 
@@ -126,41 +94,43 @@ const Dashboard = () => {
     navigate('/agendamentos');
   };
 
-  const handleVerHistorico = () => {
-    navigate('/historico');
-  };
-
   const handlePerfil = () => {
     navigate('/perfil');
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/login');
   };
 
   const handleCancelarAgendamento = async (id) => {
     if (window.confirm('Tem certeza que deseja cancelar este agendamento?')) {
       try {
         await agendamentoService.cancelarAgendamento(id);
-        alert('Agendamento cancelado com sucesso!');
-        loadDashboardData(); // Recarregar dados
+        alert('✅ Agendamento cancelado com sucesso!');
+        loadDashboardData();
       } catch (error) {
-        alert('Erro ao cancelar agendamento: ' + error.message);
+        alert('❌ Erro ao cancelar agendamento: ' + error.message);
       }
     }
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusColor = (status) => {
     switch (status) {
-      case 'agendado':
-      case 'Confirmado': return '✅';
-      case 'cancelado': return '❌';
-      case 'realizado': return '✅';
-      default: return '📅';
+      case 'agendado': return '#f59e0b';
+      case 'realizado': return '#10b981';
+      case 'cancelado': return '#ef4444';
+      case 'confirmado': return '#3b82f6';
+      default: return '#64748b';
     }
   };
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'agendado': return 'Confirmado';
-      case 'cancelado': return 'Cancelado';
+      case 'agendado': return 'Agendado';
       case 'realizado': return 'Realizado';
+      case 'cancelado': return 'Cancelado';
+      case 'confirmado': return 'Confirmado';
       default: return status;
     }
   };
@@ -168,9 +138,9 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="dashboard-container">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>Carregando...</p>
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <p>Carregando dashboard...</p>
         </div>
       </div>
     );
@@ -179,86 +149,157 @@ const Dashboard = () => {
   return (
     <div className="dashboard-container">
       {/* Header */}
-      <div className="dashboard-header">
+      <header className="admin-header">
         <div className="header-content">
-          <div className="user-info">
-            <div className="avatar-container">
-              <div className="avatar">👤</div>
-              <div className="online-indicator"></div>
-            </div>
-            <div className="user-details">
-              <h1 className="greeting">Olá, {user?.nome || 'Paciente'}</h1>
-              <p className="welcome">Bem-vindo ao NAMI</p>
-            </div>
+          <div className="header-title">
+            <h1>👋 Olá, {user?.nome || 'Paciente'}</h1>
+            <p>Bem-vindo de volta ao NAMI</p>
           </div>
           <div className="header-actions">
+            <button 
+              className="btn btn-outline"
+              onClick={handleLogout}
+            >
+              🚪 Sair
+            </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="dashboard-content">
-        {/* Cards de Ação Rápida */}
-        <div className="quick-actions">
-          <div className="action-card primary" onClick={handleAgendarConsulta}>
-            <div className="action-icon">📅</div>
-            <div className="action-text">
-              <h3>Agendar Consulta</h3>
-              <p>Marque uma nova consulta</p>
-            </div>
-            <div className="action-arrow">→</div>
+      {/* Main Content */}
+      <main className="admin-main">
+        {/* Quick Actions */}
+        <div className="quick-actions-section">
+          <div className="section-header">
+            <h2>🚀 Ações Rápidas</h2>
           </div>
+          <div className="actions-grid">
+            <button className="action-card primary" onClick={handleAgendarConsulta}>
+              <div className="action-icon">📅</div>
+              <div className="action-content">
+                <h3>Agendar Consulta</h3>
+                <p>Marque uma nova consulta com nossos especialistas</p>
+              </div>
+              <div className="action-arrow">→</div>
+            </button>
 
-          <div className="action-grid">
-            <div className="action-card" onClick={handleVerAgendamentos}>
-              <div className="action-icon">📋</div>
-              <div className="action-text">
-                <h4>Meus Agendamentos</h4>
-                <p>Ver todos os agendamentos</p>
+            <div className="secondary-actions">
+              <button className="action-card" onClick={handleVerAgendamentos}>
+                <div className="action-icon">📋</div>
+                <div className="action-content">
+                  <h4>Meus Agendamentos</h4>
+                  <p>Veja todos os seus agendamentos</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="content-section">
+          <div className="section-header">
+            <h2>📊 Visão Geral</h2>
+          </div>
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-icon today">🎯</div>
+              <div className="stat-content">
+                <h3>{estatisticas.consultasHoje}</h3>
+                <p>Consultas Hoje</p>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon upcoming">⏰</div>
+              <div className="stat-content">
+                <h3>{estatisticas.proximaConsulta.split(' - ')[0]}</h3>
+                <p>Próxima Consulta</p>
+                {estatisticas.proximaConsulta !== 'Nenhuma' && (
+                  <div className="stat-subtitle">{estatisticas.proximaConsulta.split(' - ')[1]}</div>
+                )}
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon success">✅</div>
+              <div className="stat-content">
+                <h3>{estatisticas.totalRealizadas}</h3>
+                <p>Realizadas</p>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon danger">❌</div>
+              <div className="stat-content">
+                <h3>{estatisticas.totalCanceladas}</h3>
+                <p>Canceladas</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Card de Próximos Agendamentos */}
-        <div className="section-card">
+        {/* Próximos Agendamentos */}
+        <div className="content-section">
           <div className="section-header">
-            <h2 className="section-title">📅 Próximos Agendamentos</h2>
-            <button className="see-all-button" onClick={handleVerAgendamentos}>
+            <h2>📅 Próximos Agendamentos</h2>
+            <button className="btn btn-outline" onClick={handleVerAgendamentos}>
               Ver Todos
             </button>
           </div>
 
           {proximosAgendamentos.length > 0 ? (
-            <div className="agendamentos-list">
+            <div className="cards-grid">
               {proximosAgendamentos.map((agendamento) => (
-                <div key={agendamento._id} className="agendamento-card">
-                  <div className="agendamento-header">
-                    <div className="agendamento-date">
-                      <span className="date-badge">
-                        {formatarDataLocal(agendamento.data)}
-                      </span>
-                      <span className="time">{agendamento.horario}</span>
+                <div key={agendamento._id} className="card appointment-card">
+                  <div className="card-header">
+                    <div className="user-info">
+                      <h3 className="user-name">{agendamento.medico?.nome || 'Médico'}</h3>
+                      <p className="user-email">{agendamento.medico?.especialidade || 'Especialidade'}</p>
                     </div>
-                    <div className={`status-badge ${agendamento.status.toLowerCase()}`}>
-                      {getStatusIcon(agendamento.status)} {getStatusText(agendamento.status)}
+                    <span 
+                      className="status-badge"
+                      style={{ backgroundColor: getStatusColor(agendamento.status) }}
+                    >
+                      {getStatusText(agendamento.status)}
+                    </span>
+                  </div>
+                  
+                  <div className="card-content">
+                    <div className="info-grid">
+                      <div className="info-item">
+                        <span className="info-label">📅 Data</span>
+                        <span className="info-value">{formatarDataLocal(agendamento.data)}</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="info-label">⏰ Horário</span>
+                        <span className="info-value">{agendamento.horario}</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="info-label">📍 Tipo</span>
+                        <span className="info-value">
+                          {agendamento.tipoConsulta === 'telemedicina' ? '📱 Telemedicina' : '🏥 Presencial'}
+                        </span>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="agendamento-info">
-                    <h4 className="medico-name">{agendamento.medico?.nome || 'Médico'}</h4>
-                    <p className="especialidade">{agendamento.medico?.especialidade || 'Especialidade'}</p>
-                    <p className="local">📍 {agendamento.tipoConsulta === 'telemedicina' ? 'Consulta Online' : 'Consultório'}</p>
-                  </div>
-
-                  <div className="agendamento-actions">
+                  
+                  <div className="card-actions">
                     {agendamento.status === 'agendado' && (
-                      <button
-                        className="action-btn danger"
+                      <button 
+                        className="btn btn-icon danger"
                         onClick={() => handleCancelarAgendamento(agendamento._id)}
+                        title="Cancelar Consulta"
                       >
-                        ❌ Cancelar
+                        ❌
                       </button>
                     )}
+                    <button 
+                      className="btn btn-icon"
+                      onClick={() => navigate(`/agendamentos`)}
+                      title="Ver Detalhes"
+                    >
+                      👁️
+                    </button>
                   </div>
                 </div>
               ))}
@@ -266,51 +307,13 @@ const Dashboard = () => {
           ) : (
             <div className="empty-state">
               <div className="empty-icon">📅</div>
-              <h3>Nenhum agendamento</h3>
-              <p>Você não possui agendamentos futuros</p>
-              <button className="primary-btn" onClick={handleAgendarConsulta}>
+              <h3>Nenhum agendamento futuro</h3>
+              <p>Você não possui agendamentos futuros no momento</p>
+              <button className="btn btn-primary" onClick={handleAgendarConsulta}>
                 Agendar Primeira Consulta
               </button>
             </div>
           )}
-        </div>
-
-        {/* Card de Estatísticas */}
-        <div className="section-card">
-          <h2 className="section-title">📊 Suas Estatísticas</h2>
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-icon">🎯</div>
-              <div className="stat-info">
-                <h3>{estatisticas.consultasHoje}</h3>
-                <p>Consultas Hoje</p>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon">⏰</div>
-              <div className="stat-info">
-                <h3>{estatisticas.proximaConsulta.split(' - ')[0]}</h3>
-                <p>Próxima Consulta</p>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon">✅</div>
-              <div className="stat-info">
-                <h3>{estatisticas.totalRealizadas}</h3>
-                <p>Realizadas</p>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-icon">❌</div>
-              <div className="stat-info">
-                <h3>{estatisticas.totalFaltas}</h3>
-                <p>Faltas</p>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Lembrete */}
@@ -320,43 +323,45 @@ const Dashboard = () => {
             <div className="notification-content">
               <strong>Lembrete:</strong> Sua próxima consulta é {estatisticas.proximaConsulta}
             </div>
-            <button className="notification-action">OK</button>
+            <button className="btn btn-outline btn-sm">OK</button>
           </div>
         )}
-      </div>
+      </main>
 
-      {/* Menu Inferior */}
-      <div className="bottom-nav">
-        <button
-          className={`nav-item ${activeMenu === 'home' ? 'active' : ''}`}
-          onClick={() => setActiveMenu('home')}
-        >
-          <span className="nav-icon">🏠</span>
-          <span className="nav-label">Home</span>
-        </button>
+      {/* Bottom Navigation */}
+      <nav className="bottom-nav">
+        <div className="nav-tabs">
+          <button
+            className={`nav-tab ${activeMenu === 'home' ? 'active' : ''}`}
+            onClick={() => setActiveMenu('home')}
+          >
+            <span className="tab-icon">🏠</span>
+            <span className="tab-label">Início</span>
+          </button>
 
-        <button
-          className={`nav-item ${activeMenu === 'agendar' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveMenu('agendar');
-            handleAgendarConsulta();
-          }}
-        >
-          <span className="nav-icon">📅</span>
-          <span className="nav-label">Agendar</span>
-        </button>
+          <button
+            className={`nav-tab ${activeMenu === 'agendar' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveMenu('agendar');
+              handleAgendarConsulta();
+            }}
+          >
+            <span className="tab-icon">📅</span>
+            <span className="tab-label">Agendar</span>
+          </button>
 
-        <button
-          className={`nav-item ${activeMenu === 'perfil' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveMenu('perfil');
-            handlePerfil();
-          }}
-        >
-          <span className="nav-icon">👤</span>
-          <span className="nav-label">Perfil</span>
-        </button>
-      </div>
+          <button
+            className={`nav-tab ${activeMenu === 'perfil' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveMenu('perfil');
+              handlePerfil();
+            }}
+          >
+            <span className="tab-icon">👤</span>
+            <span className="tab-label">Perfil</span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
 };

@@ -1,263 +1,228 @@
+/* AgendamentoConsulta.css - Seguindo o padrão do AdminDashboard */
+
+/* Container principal usando as mesmas variáveis */
 .agendamento-container {
   min-height: 100vh;
-  background: #f8fafc;
-  padding: 20px;
+  background: var(--background);
 }
 
-.agendamento-header {
-  background: linear-gradient(135deg, #003366 0%, #002244 100%);
-  border-radius: 16px;
-  padding: 30px 40px;
-  margin-bottom: 30px;
-  box-shadow: 0 4px 20px rgba(0, 51, 102, 0.15);
+/* Step Indicator */
+.step-indicator {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.step {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--background);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+
+.step.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* Form Grid específico para agendamento */
+.agendamento-container .form-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.agendamento-container .form-group {
+  margin-bottom: 0;
+}
+
+/* Form Hints e Estados */
+.form-hint {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin-top: 0.5rem;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 0.25rem;
 }
 
-.back-button {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  padding: 12px 20px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
+.form-warning {
+  font-size: 0.75rem;
+  color: var(--warning);
+  margin-top: 0.5rem;
   display: flex;
   align-items: center;
-  gap: 8px;
-  text-decoration: none;
+  gap: 0.25rem;
+  font-weight: 500;
 }
 
-.back-button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
-  transform: translateY(-2px);
-  color: white;
-}
-
-.agendamento-header h1 {
-  color: white;
-  font-size: 28px;
-  font-weight: 800;
-  margin: 0;
-  letter-spacing: -0.5px;
-}
-
-.agendamento-content {
-  max-width: 600px;
-  margin: 0 auto;
-  background: white;
-  padding: 40px;
-  border-radius: 16px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e1e8ed;
-}
-
-.agendamento-form {
+.loading-indicator {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
   display: flex;
-  flex-direction: column;
-  gap: 25px;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
+/* Resumo do Agendamento */
+.agendamento-summary {
+  background: var(--background);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin: 2rem 0 1rem 0;
 }
 
-.form-label {
+.agendamento-summary h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
   font-weight: 600;
-  color: #003366;
-  margin-bottom: 10px;
-  font-size: 14px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.form-select,
-.form-input {
-  padding: 16px;
-  border: 2px solid #e1e8ed;
-  border-radius: 12px;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  background: #f8fafc;
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
 }
 
-.form-select:focus,
-.form-input:focus {
-  outline: none;
-  border-color: #003366;
-  background: white;
-  box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
-.form-select:disabled,
-.form-input:disabled {
-  background-color: #f1f5f9;
+.summary-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.summary-value {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Estados de desabilitado com estilo consistente */
+.agendamento-container select:disabled,
+.agendamento-container input:disabled {
+  background-color: var(--background);
+  color: var(--text-tertiary);
   cursor: not-allowed;
   opacity: 0.7;
 }
 
-.radio-group {
-  display: flex;
-  gap: 25px;
-  margin-top: 10px;
+.agendamento-container select:disabled::placeholder {
+  color: var(--text-tertiary);
 }
 
-.radio-label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  font-weight: 500;
-  color: #666;
-}
-
-.radio-label input[type="radio"] {
-  display: none;
-}
-
-.radio-custom {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #e1e8ed;
+/* Loading States */
+.loading-spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-left-color: currentColor;
   border-radius: 50%;
-  position: relative;
-  transition: all 0.3s ease;
-  background: white;
+  animation: spin 1s linear infinite;
 }
 
-.radio-label input[type="radio"]:checked + .radio-custom {
-  border-color: #003366;
-  background: #003366;
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-.radio-label input[type="radio"]:checked + .radio-custom::after {
-  content: '';
-  width: 8px;
-  height: 8px;
-  background: white;
-  border-radius: 50%;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.radio-label:hover .radio-custom {
-  border-color: #003366;
-}
-
-.form-textarea {
-  resize: vertical;
-  min-height: 100px;
-  padding: 16px;
-  border: 2px solid #e1e8ed;
-  border-radius: 12px;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  background: #f8fafc;
-  font-family: inherit;
-}
-
-.form-textarea:focus {
-  outline: none;
-  border-color: #003366;
-  background: white;
-  box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
-}
-
-.submit-button {
-  background: linear-gradient(135deg, #003366 0%, #002244 100%);
-  color: white;
-  border: none;
-  padding: 18px;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 10px;
-  box-shadow: 0 4px 15px rgba(0, 51, 102, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.submit-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 51, 102, 0.4);
-}
-
-.submit-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.loading-small {
-  font-size: 14px;
-  color: #666;
-  margin-top: 8px;
-  font-style: italic;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.loading-small::before {
-  content: '⏳';
-  font-size: 12px;
-}
-
-/* Responsividade */
+/* Responsividade Específica */
 @media (max-width: 768px) {
-  .agendamento-header {
-    padding: 25px 30px;
-    flex-direction: column;
-    text-align: center;
-    gap: 15px;
+  .agendamento-container .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
   
-  .agendamento-header h1 {
-    font-size: 24px;
+  .step-indicator {
+    flex-wrap: wrap;
+    justify-content: center;
   }
   
-  .agendamento-content {
-    padding: 30px 25px;
-    margin: 0 15px;
+  .step {
+    font-size: 0.7rem;
+    padding: 0.375rem 0.75rem;
   }
   
-  .radio-group {
-    flex-direction: column;
-    gap: 15px;
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .agendamento-summary {
+    padding: 1rem;
+    margin: 1.5rem 0 1rem 0;
   }
 }
 
 @media (max-width: 480px) {
-  .agendamento-container {
-    padding: 15px 10px;
+  .step-indicator {
+    gap: 0.5rem;
   }
   
-  .agendamento-header {
-    padding: 20px;
-    border-radius: 12px;
+  .step {
+    font-size: 0.65rem;
+    padding: 0.25rem 0.5rem;
   }
-  
-  .agendamento-header h1 {
-    font-size: 20px;
+}
+
+/* Melhorias de Acessibilidade */
+.agendamento-container select:focus,
+.agendamento-container input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Estados de Hover consistentes */
+.agendamento-container select:not(:disabled):hover,
+.agendamento-container input:not(:disabled):hover {
+  border-color: var(--primary);
+}
+
+/* Animações suaves */
+.agendamento-summary {
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
-  
-  .agendamento-content {
-    padding: 25px 20px;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  
-  .back-button {
-    width: 100%;
-    justify-content: center;
-  }
+}
+
+/* Customização dos options do select */
+.agendamento-container select option {
+  padding: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.agendamento-container select option:checked {
+  background: var(--primary);
+  color: white;
+}
+
+/* Placeholder styling */
+.agendamento-container select:invalid {
+  color: var(--text-tertiary);
+}
+
+.agendamento-container select option[value=""] {
+  color: var(--text-tertiary);
 }

@@ -1,159 +1,391 @@
+/* Perfil.css - Seguindo o padrão do AdminDashboard */
+
+/* Container principal usando as mesmas variáveis */
 .perfil-container {
   min-height: 100vh;
-  background: #f8f9fa;
-  padding: 20px;
+  background: var(--background);
 }
 
-.perfil-header {
+/* Navigation Tabs específica para Perfil */
+.perfil-nav {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-light);
+  margin-bottom: 2rem;
+  overflow: hidden;
+}
+
+.perfil-nav .nav-tabs {
+  display: flex;
+  gap: 0;
+}
+
+.perfil-nav .nav-tab {
   display: flex;
   align-items: center;
-  margin-bottom: 30px;
-}
-
-.perfil-header h1 {
-  color: #003366;
-  margin: 0;
-}
-
-.perfil-content {
-  max-width: 800px;
-  margin: 0 auto;
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.perfil-tabs {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
-  border-bottom: 2px solid #e1e5e9;
-  padding-bottom: 10px;
-}
-
-.tab-button {
-  background: none;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
   border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
   cursor: pointer;
+  border-radius: 0;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
   font-weight: 500;
-  transition: all 0.3s;
+  flex: 1;
+  justify-content: center;
+  border-bottom: 3px solid transparent;
 }
 
-.tab-button.active {
-  background: #003366;
+.perfil-nav .nav-tab:hover {
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+.perfil-nav .nav-tab.active {
+  background: var(--primary);
   color: white;
+  border-bottom-color: var(--primary-dark);
 }
 
-.tab-button:hover:not(.active) {
-  background: #f8f9fa;
+.perfil-nav .tab-icon {
+  font-size: 1.125rem;
 }
 
-.perfil-form,
-.senha-form {
+.perfil-nav .tab-label {
+  font-weight: 500;
+}
+
+/* Tab Content */
+.tab-content {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.tab-pane {
+  padding: 2rem;
+}
+
+.tab-pane .section-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.tab-pane .section-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.tab-pane .section-header p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Form Styles específicos para Perfil */
+.perfil-container .modal-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 1.5rem;
 }
 
-.form-grid {
+.perfil-container .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
 }
 
-.form-group {
+.perfil-container .form-group {
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
 }
 
-.form-group label {
-  font-weight: 600;
-  color: #003366;
-  margin-bottom: 8px;
+.perfil-container .form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
-.form-group input {
-  padding: 12px;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 0.3s;
+.perfil-container .form-group input {
+  padding: 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  background: var(--surface);
 }
 
-.form-group input:focus {
+.perfil-container .form-group input:focus {
   outline: none;
-  border-color: #003366;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-.section-title {
-  color: #003366;
-  margin: 30px 0 20px 0;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #e1e5e9;
+.perfil-container .form-group input::placeholder {
+  color: var(--text-tertiary);
 }
 
-.save-button {
-  background: linear-gradient(135deg, #003366 0%, #002244 100%);
-  color: white;
-  border: none;
-  padding: 16px;
-  border-radius: 8px;
-  font-size: 16px;
+/* Password Requirements */
+.password-requirements {
+  background: var(--background);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+
+.password-requirements h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
   font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.password-requirements ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.password-requirements li {
+  margin-bottom: 0.5rem;
+}
+
+.password-requirements li:last-child {
+  margin-bottom: 0;
+}
+
+/* Form Actions */
+.perfil-container .form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-light);
+  margin-top: 1rem;
+}
+
+/* Logout Section */
+.logout-section {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-light);
+  padding: 2rem;
+  text-align: center;
+}
+
+.logout-section .section-header {
+  margin-bottom: 1.5rem;
+}
+
+.logout-section .section-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.logout-section .section-header p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.logout-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logout-warning {
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+  margin: 0;
+  font-style: italic;
+}
+
+/* Button Styles específicos para Perfil */
+.perfil-container .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: transform 0.2s;
-  margin-top: 20px;
+  transition: all 0.2s ease;
+  text-decoration: none;
 }
 
-.save-button:hover:not(:disabled) {
-  transform: translateY(-2px);
+.perfil-container .btn-primary {
+  background: var(--primary);
+  color: white;
 }
 
-.save-button:disabled {
+.perfil-container .btn-primary:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.perfil-container .btn-outline {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.perfil-container .btn-outline:hover:not(:disabled) {
+  background: var(--background);
+  border-color: var(--text-secondary);
+}
+
+.perfil-container .btn-danger {
+  background: #ef4444;
+  color: white;
+}
+
+.perfil-container .btn-danger:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.perfil-container .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  transform: none;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
-.logout-section {
-  margin-top: 40px;
-  padding-top: 20px;
-  border-top: 2px solid #e1e5e9;
-  text-align: center;
+/* Loading States */
+.perfil-container .loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  gap: 1rem;
 }
 
-.logout-button {
-  background: #dc3545;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s;
+.perfil-container .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
-.logout-button:hover {
-  background: #c82333;
+.perfil-container .loading-spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-left-color: currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
-.loading {
-  text-align: center;
-  padding: 50px;
-  font-size: 18px;
-  color: #666;
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
+.perfil-container .loading-overlay p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Responsividade */
 @media (max-width: 768px) {
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .perfil-tabs {
+  .perfil-nav .nav-tabs {
     flex-direction: column;
   }
+  
+  .perfil-nav .nav-tab {
+    justify-content: flex-start;
+    border-bottom: 1px solid var(--border-light);
+    border-left: 3px solid transparent;
+  }
+  
+  .perfil-nav .nav-tab.active {
+    border-left-color: var(--primary-dark);
+    border-bottom-color: var(--border-light);
+  }
+  
+  .perfil-container .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .perfil-container .form-actions {
+    flex-direction: column;
+  }
+  
+  .tab-pane {
+    padding: 1.5rem;
+  }
+  
+  .logout-section {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .perfil-container .form-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .password-requirements {
+    padding: 1rem;
+  }
+  
+  .password-requirements ul {
+    padding-left: 1.25rem;
+  }
+}
+
+/* Melhorias de Acessibilidade */
+.perfil-container .form-group input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.perfil-container .btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Estados de validação */
+.perfil-container .form-group input:invalid:not(:focus):not(:placeholder-shown) {
+  border-color: #ef4444;
+}
+
+.perfil-container .form-group input:valid:not(:focus):not(:placeholder-shown) {
+  border-color: #10b981;
+}
+
+/* Transições suaves */
+.perfil-container .nav-tab,
+.perfil-container .btn,
+.perfil-container .form-group input {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }

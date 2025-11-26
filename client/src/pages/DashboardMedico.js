@@ -15,7 +15,7 @@ const DashboardMedico = () => {
   const [estatisticas, setEstatisticas] = useState({
     consultasHoje: 0,
     realizadas: 0,
-    faltas: 0,
+    canceladas: 0,
     tempoMedio: '0 min'
   });
   const [loading, setLoading] = useState(true);
@@ -27,61 +27,41 @@ const DashboardMedico = () => {
     loadDashboardData();
   }, []);
 
-  // ✅ CORREÇÃO COMPLETA - DashboardMedico.js - loadDashboardData
   const loadDashboardData = async () => {
     try {
       setLoading(true);
       setError('');
 
-      console.log('🔄 Carregando dados do dashboard médico...');
-
-      // Carregar dados do usuário
       const userData = authService.getCurrentUser();
-      console.log('👤 Usuário atual:', userData);
 
       if (!userData) {
         navigate('/login');
         return;
       }
 
-      // ✅ CORREÇÃO: Buscar dados do médico de forma robusta
       let medicoData = null;
       try {
-        console.log('📋 Tentando buscar dados específicos do médico...');
         medicoData = await medicoService.getMeusDados();
-        console.log('✅ Dados específicos do médico:', medicoData);
       } catch (medicoError) {
-        console.warn('⚠️ Erro ao buscar dados específicos, tentando método alternativo...', medicoError);
-
-        // ✅ MÉTODO ALTERNATIVO: Buscar todos médicos e filtrar
         try {
           const todosMedicos = await medicoService.getMedicos();
-          console.log('📊 Todos médicos disponíveis:', todosMedicos);
-
-          // Encontrar médico pelo ID do usuário ou email
           medicoData = todosMedicos.find(medico => {
             const matchById = medico.usuario?._id === userData.id;
             const matchByEmail = medico.usuario?.email === userData.email;
-            console.log(`🔍 Comparando: ${medico.usuario?.email} com ${userData.email} - Match: ${matchByEmail}`);
             return matchById || matchByEmail;
           });
-
-          console.log('🎯 Médico encontrado no método alternativo:', medicoData);
         } catch (altError) {
           console.error('❌ Erro no método alternativo:', altError);
         }
       }
 
-      // ✅ DEFINIR DADOS DO MÉDICO COM FALLBACKS ROBUSTOS
       if (medicoData) {
-        console.log('✅ Usando dados do médico encontrado:', medicoData);
         setMedico({
           nome: medicoData.nome || medicoData.usuario?.nome || userData.nome || 'Médico',
           especialidade: medicoData.especialidade || 'Especialidade não informada',
           matricula: userData.email || 'N/A'
         });
       } else {
-        console.warn('⚠️ Nenhum dado específico do médico encontrado, usando dados do usuário');
         setMedico({
           nome: userData.nome || 'Médico',
           especialidade: 'Especialidade não configurada',
@@ -89,43 +69,27 @@ const DashboardMedico = () => {
         });
       }
 
-      // ✅ CARREGAR ATENDIMENTOS - COM TRATAMENTO MELHORADO
       try {
-        console.log('📅 Buscando agendamentos do médico...');
         const atendimentos = await agendamentoService.getAgendamentosMedico();
-        console.log('✅ Agendamentos carregados:', atendimentos);
 
         if (atendimentos && Array.isArray(atendimentos)) {
           const hoje = new Date().toISOString().split('T')[0];
-          console.log('📆 Data de hoje:', hoje);
 
           const atendimentosHoje = atendimentos.filter(ag => {
-            if (!ag.data) {
-              console.log('❌ Agendamento sem data:', ag);
-              return false;
-            }
-
+            if (!ag.data) return false;
             const agDate = new Date(ag.data).toISOString().split('T')[0];
             const isHoje = agDate === hoje;
             const statusValido = ['agendado', 'confirmado'].includes(ag.status);
-
-            console.log(`🔍 Agendamento: ${ag.paciente?.nome} - Data: ${agDate} - Hoje: ${isHoje} - Status: ${ag.status} - Válido: ${isHoje && statusValido}`);
-
             return isHoje && statusValido;
           });
 
-          console.log('🎯 Atendimentos de hoje:', atendimentosHoje);
           setProximosAtendimentos(atendimentosHoje.slice(0, 5));
           calcularEstatisticas(atendimentos);
         } else {
-          console.warn('⚠️ Nenhum agendamento retornado ou formato inválido');
           setProximosAtendimentos([]);
           calcularEstatisticas([]);
         }
       } catch (atendimentoError) {
-        console.error('❌ Erro ao carregar atendimentos:', atendimentoError);
-
-        // ✅ MENSAGEM DE ERRO ESPECÍFICA
         if (atendimentoError.message && atendimentoError.message.includes('Cannot GET')) {
           setError('Funcionalidade em desenvolvimento. O endpoint de agendamentos para médicos está sendo implementado.');
         } else if (atendimentoError.response?.status === 404) {
@@ -143,7 +107,6 @@ const DashboardMedico = () => {
       const errorMessage = error?.message || error?.toString() || 'Erro desconhecido ao carregar dados';
       setError('Erro ao carregar dashboard: ' + errorMessage);
 
-      // ✅ FALLBACK FINAL: Garantir que pelo menos dados básicos sejam carregados
       const userData = authService.getCurrentUser();
       if (userData) {
         setMedico({
@@ -154,16 +117,15 @@ const DashboardMedico = () => {
       }
     } finally {
       setLoading(false);
-      console.log('✅ LoadDashboardData finalizado');
     }
   };
-  // ✅ CORREÇÃO NO DashboardMedico.js - Função calcularEstatisticas
+
   const calcularEstatisticas = (atendimentos) => {
     if (!atendimentos || !Array.isArray(atendimentos)) {
       setEstatisticas({
         consultasHoje: 0,
         realizadas: 0,
-        faltas: 0,
+        canceladas: 0,
         tempoMedio: '0 min'
       });
       return;
@@ -171,7 +133,6 @@ const DashboardMedico = () => {
 
     const hoje = new Date().toISOString().split('T')[0];
 
-    // ✅ MÉTRICAS REAIS
     const consultasHoje = atendimentos.filter(ag => {
       if (!ag.data) return false;
       const agDate = new Date(ag.data).toISOString().split('T')[0];
@@ -179,44 +140,39 @@ const DashboardMedico = () => {
     }).length;
 
     const realizadas = atendimentos.filter(ag => ag.status === 'realizado').length;
-
-    const faltas = atendimentos.filter(ag => ag.status === 'cancelado').length;
-
-    // ✅ TEMPO MÉDIO REAL (baseado na duração das consultas realizadas)
+    const canceladas = atendimentos.filter(ag => ag.status === 'cancelado').length;
     const consultasRealizadas = atendimentos.filter(ag => ag.status === 'realizado');
-    const tempoMedio = consultasRealizadas.length > 0 ? '25 min' : '0 min'; // Podemos calcular melhor depois
+    const tempoMedio = consultasRealizadas.length > 0 ? '25 min' : '0 min';
 
     setEstatisticas({
       consultasHoje,
       realizadas,
-      faltas,
+      canceladas,
       tempoMedio
     });
   };
 
   const handleIniciarAtendimento = async (atendimentoId) => {
     try {
-      // Usar a função correta do agendamentoService
       await agendamentoService.marcarComoRealizado(atendimentoId);
-      alert('Atendimento iniciado com sucesso!');
+      alert('✅ Atendimento iniciado com sucesso!');
       await loadDashboardData();
     } catch (error) {
       console.error('Erro ao iniciar atendimento:', error);
       const errorMessage = error?.message || 'Erro ao iniciar atendimento';
-      alert('Erro: ' + errorMessage);
+      alert('❌ Erro: ' + errorMessage);
     }
   };
 
   const handleFinalizarAtendimento = async (atendimentoId) => {
     try {
-      // Para finalizar, também usamos marcarComoRealizado
       await agendamentoService.marcarComoRealizado(atendimentoId);
-      alert('Atendimento finalizado com sucesso!');
+      alert('✅ Atendimento finalizado com sucesso!');
       await loadDashboardData();
     } catch (error) {
       console.error('Erro ao finalizar atendimento:', error);
       const errorMessage = error?.message || 'Erro ao finalizar atendimento';
-      alert('Erro: ' + errorMessage);
+      alert('❌ Erro: ' + errorMessage);
     }
   };
 
@@ -224,12 +180,12 @@ const DashboardMedico = () => {
     if (window.confirm('Tem certeza que deseja cancelar este atendimento?')) {
       try {
         await agendamentoService.cancelarAgendamento(atendimentoId);
-        alert('Atendimento cancelado com sucesso!');
+        alert('✅ Atendimento cancelado com sucesso!');
         await loadDashboardData();
       } catch (error) {
         console.error('Erro ao cancelar atendimento:', error);
         const errorMessage = error?.message || 'Erro ao cancelar atendimento';
-        alert('Erro: ' + errorMessage);
+        alert('❌ Erro: ' + errorMessage);
       }
     }
   };
@@ -252,17 +208,17 @@ const DashboardMedico = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'confirmado': return '#28a745';
+      case 'confirmado': return '#10b981';
       case 'agendado': return '#f59e0b';
-      case 'realizado': return '#10b981';
+      case 'realizado': return '#3b82f6';
       case 'cancelado': return '#ef4444';
-      default: return '#6b7280';
+      default: return '#64748b';
     }
   };
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'agendado': return 'Aguardando';
+      case 'agendado': return 'Agendado';
       case 'confirmado': return 'Confirmado';
       case 'realizado': return 'Realizado';
       case 'cancelado': return 'Cancelado';
@@ -299,9 +255,9 @@ const DashboardMedico = () => {
   if (loading) {
     return (
       <div className="dashboard-medico-container">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>Carregando dados médicos...</p>
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <p>Carregando dashboard médico...</p>
         </div>
       </div>
     );
@@ -310,24 +266,13 @@ const DashboardMedico = () => {
   return (
     <div className="dashboard-medico-container">
       {/* Header */}
-      <div className="dashboard-header">
+      <header className="admin-header">
         <div className="header-content">
-          <div className="user-info">
-            <div className="avatar-container">
-              <div className="avatar">👨‍⚕️</div>
-              <div className="online-indicator"></div>
-            </div>
-            <div className="user-details">
-              <h1 className="greeting">{medico.nome}</h1>
-              <p className="especialidade">{medico.especialidade}</p>
-              <p className="matricula">Email: {medico.matricula}</p>
-            </div>
+          <div className="header-title">
+            <h1>👨‍⚕️ Olá, {medico.nome}</h1>
+            <p>{medico.especialidade} • {medico.matricula}</p>
           </div>
           <div className="header-actions">
-            <button className="notification-btn">
-              🔔
-              <span className="notification-badge">2</span>
-            </button>
             <button
               className="btn btn-outline"
               onClick={() => {
@@ -339,9 +284,10 @@ const DashboardMedico = () => {
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="dashboard-content">
+      {/* Main Content */}
+      <main className="admin-main">
         {/* Mensagem de Erro */}
         {error && (
           <div className="error-alert">
@@ -359,146 +305,160 @@ const DashboardMedico = () => {
           </div>
         )}
 
-        {/* Cards de Métricas */}
-        <div className="metrics-grid">
-          <div className="metric-card primary">
-            <div className="metric-icon">📅</div>
-            <div className="metric-info">
+        {/* Stats Grid */}
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-icon today">📅</div>
+            <div className="stat-content">
               <h3>{estatisticas.consultasHoje}</h3>
               <p>Consultas Hoje</p>
             </div>
           </div>
 
-          <div className="metric-card success">
-            <div className="metric-icon">✅</div>
-            <div className="metric-info">
+          <div className="stat-card">
+            <div className="stat-icon success">✅</div>
+            <div className="stat-content">
               <h3>{estatisticas.realizadas}</h3>
               <p>Realizadas</p>
             </div>
           </div>
 
-          <div className="metric-card warning">
-            <div className="metric-icon">⏰</div>
-            <div className="metric-info">
+          <div className="stat-card">
+            <div className="stat-icon warning">⏰</div>
+            <div className="stat-content">
               <h3>{estatisticas.tempoMedio}</h3>
               <p>Tempo Médio</p>
             </div>
           </div>
 
-          <div className="metric-card danger">
-            <div className="metric-icon">❌</div>
-            <div className="metric-info">
-              <h3>{estatisticas.faltas}</h3>
-              <p>Faltas</p>
+          <div className="stat-card">
+            <div className="stat-icon danger">❌</div>
+            <div className="stat-content">
+              <h3>{estatisticas.canceladas}</h3>
+              <p>Canceladas</p>
             </div>
           </div>
         </div>
 
-        {/* Card de Ações Rápidas */}
-        <div className="section-card">
-          <h2 className="section-title">⚡ Ações Rápidas</h2>
-          <div className="quick-actions-grid">
-            <button className="action-btn primary" onClick={handleVerAgenda}>
-              <span className="action-icon">📋</span>
-              <span className="action-text">Minha Agenda</span>
+        {/* Quick Actions */}
+        <div className="quick-actions-section">
+          <div className="section-header">
+            <h2>🚀 Ações Rápidas</h2>
+          </div>
+          <div className="actions-grid">
+            <button className="action-card primary" onClick={handleVerAgenda}>
+              <div className="action-icon">📋</div>
+              <div className="action-content">
+                <h3>Minha Agenda</h3>
+                <p>Gerencie seus agendamentos e horários</p>
+              </div>
+              <div className="action-arrow">→</div>
             </button>
 
-            <button className="action-btn success" onClick={handleVerPacientes}>
-              <span className="action-icon">👥</span>
-              <span className="action-text">Meus Pacientes</span>
-            </button>
+            <div className="secondary-actions">
+              <button className="action-card" onClick={handleVerPacientes}>
+                <div className="action-icon">👥</div>
+                <div className="action-content">
+                  <h4>Meus Pacientes</h4>
+                  <p>Visualize o histórico de pacientes</p>
+                </div>
+              </button>
 
-            <button className="action-btn info" onClick={handleVerRelatorios}>
-              <span className="action-icon">📊</span>
-              <span className="action-text">Relatórios</span>
-            </button>
-
-            <button className="action-btn secondary" onClick={handlePerfil}>
-              <span className="action-icon">👤</span>
-              <span className="action-text">Meu Perfil</span>
-            </button>
+              <button className="action-card" onClick={handleVerRelatorios}>
+                <div className="action-icon">📊</div>
+                <div className="action-content">
+                  <h4>Relatórios</h4>
+                  <p>Acesse relatórios e estatísticas</p>
+                </div>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Card de Próximos Atendimentos */}
-        <div className="section-card">
+        {/* Próximos Atendimentos */}
+        <div className="content-section">
           <div className="section-header">
-            <h2 className="section-title">🩺 Próximos Atendimentos</h2>
-            <button className="see-all-button" onClick={handleVerAgenda}>
+            <h2>🩺 Próximos Atendimentos</h2>
+            <button className="btn btn-outline" onClick={handleVerAgenda}>
               Ver Agenda Completa
             </button>
           </div>
 
           {proximosAtendimentos.length > 0 ? (
-            <div className="atendimentos-list">
+            <div className="cards-grid">
               {proximosAtendimentos.map((atendimento) => (
-                <div key={atendimento._id} className="atendimento-card">
-                  <div className="atendimento-header">
-                    <div className="paciente-info">
-                      <h4 className="paciente-nome">{atendimento.paciente?.nome || 'Paciente'}</h4>
-                      <p className="consulta-tipo">
-                        {atendimento.tipoConsulta === 'telemedicina' ? 'Telemedicina' : 'Consulta Presencial'}
+                <div key={atendimento._id} className="card appointment-card">
+                  <div className="card-header">
+                    <div className="user-info">
+                      <h3 className="user-name">{atendimento.paciente?.nome || 'Paciente'}</h3>
+                      <p className="user-email">
+                        {atendimento.tipoConsulta === 'telemedicina' ? '📱 Telemedicina' : '🏥 Presencial'}
                       </p>
                     </div>
-                    <div
+                    <span
                       className="status-badge"
                       style={{ backgroundColor: getStatusColor(atendimento.status) }}
                     >
                       {getStatusText(atendimento.status)}
-                    </div>
+                    </span>
                   </div>
 
-                  <div className="atendimento-details">
-                    <div className="detail-item">
-                      <span className="detail-label">Horário:</span>
-                      <span className="detail-value">{atendimento.horario}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Data:</span>
-                      <span className="detail-value">
-                        {formatarData(atendimento.data)}
-                      </span>
-                    </div>
-                    {atendimento.status === 'agendado' && (
-                      <div className="detail-item">
-                        <span className="detail-label">Tempo de Espera:</span>
-                        <span className="detail-value">
-                          {calcularTempoEspera(atendimento.data, atendimento.horario)}
-                        </span>
+                  <div className="card-content">
+                    <div className="info-grid">
+                      <div className="info-item">
+                        <span className="info-label">📅 Data</span>
+                        <span className="info-value">{formatarData(atendimento.data)}</span>
                       </div>
-                    )}
+                      <div className="info-item">
+                        <span className="info-label">⏰ Horário</span>
+                        <span className="info-value">{atendimento.horario}</span>
+                      </div>
+                      {atendimento.status === 'agendado' && (
+                        <div className="info-item">
+                          <span className="info-label">⏱️ Espera</span>
+                          <span className="info-value">
+                            {calcularTempoEspera(atendimento.data, atendimento.horario)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="atendimento-actions">
+                  <div className="card-actions">
                     {atendimento.status === 'agendado' && (
                       <>
                         <button
-                          className="action-btn primary small"
+                          className="btn btn-icon success"
                           onClick={() => handleIniciarAtendimento(atendimento._id)}
+                          title="Iniciar Atendimento"
                         >
-                          🩺 Iniciar Atendimento
+                          🩺
                         </button>
                         <button
-                          className="action-btn danger small"
+                          className="btn btn-icon danger"
                           onClick={() => handleCancelarAtendimento(atendimento._id)}
+                          title="Cancelar Atendimento"
                         >
-                          ❌ Cancelar
+                          ❌
                         </button>
                       </>
                     )}
                     {atendimento.status === 'confirmado' && (
                       <button
-                        className="action-btn success small"
+                        className="btn btn-icon primary"
                         onClick={() => handleFinalizarAtendimento(atendimento._id)}
+                        title="Finalizar Atendimento"
                       >
-                        ✅ Finalizar Atendimento
+                        ✅
                       </button>
                     )}
-                    {(atendimento.status === 'realizado' || atendimento.status === 'cancelado') && (
-                      <span className="status-text">
-                        {atendimento.status === 'realizado' ? 'Consulta realizada' : 'Consulta cancelada'}
-                      </span>
-                    )}
+                    <button
+                      className="btn btn-icon"
+                      onClick={() => navigate(`/agenda-medico`)}
+                      title="Ver Detalhes"
+                    >
+                      👁️
+                    </button>
                   </div>
                 </div>
               ))}
@@ -506,67 +466,83 @@ const DashboardMedico = () => {
           ) : (
             <div className="empty-state">
               <div className="empty-icon">📅</div>
-              <h3>Nenhum atendimento agendado</h3>
+              <h3>Nenhum atendimento hoje</h3>
               <p>Não há consultas agendadas para hoje</p>
+              <button className="btn btn-outline" onClick={handleVerAgenda}>
+                Ver Agenda Completa
+              </button>
             </div>
           )}
         </div>
 
-        {/* Notificações */}
+        {/* Lembrete */}
         {estatisticas.consultasHoje > 0 && (
-          <div className="notification-banner info">
-            <div className="notification-icon">💡</div>
+          <div className="notification-banner">
+            <div className="notification-icon">🔔</div>
             <div className="notification-content">
               <strong>Lembrete:</strong> Você tem {estatisticas.consultasHoje} consultas hoje.
               Tempo médio de atendimento: {estatisticas.tempoMedio}
             </div>
+            <button className="btn btn-outline btn-sm">OK</button>
           </div>
         )}
-      </div>
+      </main>
 
-      {/* Menu Inferior Médico */}
-      <div className="bottom-nav">
-        <button
-          className={`nav-item ${activeMenu === 'dashboard' ? 'active' : ''}`}
-          onClick={() => setActiveMenu('dashboard')}
-        >
-          <span className="nav-icon">📊</span>
-          <span className="nav-label">Dashboard</span>
-        </button>
+      {/* Bottom Navigation */}
+      <nav className="bottom-nav">
+        <div className="nav-tabs">
+          <button
+            className={`nav-tab ${activeMenu === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveMenu('dashboard')}
+          >
+            <span className="tab-icon">📊</span>
+            <span className="tab-label">Dashboard</span>
+          </button>
 
-        <button
-          className={`nav-item ${activeMenu === 'agenda' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveMenu('agenda');
-            handleVerAgenda();
-          }}
-        >
-          <span className="nav-icon">📅</span>
-          <span className="nav-label">Agenda</span>
-        </button>
+          <button
+            className={`nav-tab ${activeMenu === 'agenda' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveMenu('agenda');
+              handleVerAgenda();
+            }}
+          >
+            <span className="tab-icon">📅</span>
+            <span className="tab-label">Agenda</span>
+          </button>
 
-        <button
-          className={`nav-item ${activeMenu === 'pacientes' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveMenu('pacientes');
-            handleVerPacientes();
-          }}
-        >
-          <span className="nav-icon">👥</span>
-          <span className="nav-label">Pacientes</span>
-        </button>
+          <button
+            className={`nav-tab ${activeMenu === 'pacientes' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveMenu('pacientes');
+              handleVerPacientes();
+            }}
+          >
+            <span className="tab-icon">👥</span>
+            <span className="tab-label">Pacientes</span>
+          </button>
 
-        <button
-          className={`nav-item ${activeMenu === 'relatorios' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveMenu('relatorios');
-            handleVerRelatorios();
-          }}
-        >
-          <span className="nav-icon">📋</span>
-          <span className="nav-label">Relatórios</span>
-        </button>
-      </div>
+          <button
+            className={`nav-tab ${activeMenu === 'relatorios' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveMenu('relatorios');
+              handleVerRelatorios();
+            }}
+          >
+            <span className="tab-icon">📋</span>
+            <span className="tab-label">Relatórios</span>
+          </button>
+          <button
+            className={`nav-tab ${activeMenu === 'perfil' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveMenu('perfil');
+              handlePerfil();
+            }}
+          >
+            <span className="tab-icon">👤</span>
+            <span className="tab-label">Perfil</span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
 };

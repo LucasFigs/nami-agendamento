@@ -9,16 +9,19 @@ const {
     buscarMedicosPorEspecialidade,
     getMeusDados,
     toggleMedicoStatus,
-    criarMedicoCompleto
+    criarMedicoCompleto,
+    atualizarMeuPerfil // ✅ ADICIONAR ESTA IMPORT
 } = require('../controllers/medicoController');
 
 const proteger = require('../middleware/authMiddleware');
 const adminOnly = require('../middleware/adminMiddleware');
+const medicoOnly = require('../middleware/medicoMiddleware'); // ✅ ADICIONAR ESTE MIDDLEWARE
 
 const router = express.Router();
 
-// ✅ CORREÇÃO: Rotas específicas PRIMEIRO
-router.get('/meus-dados', proteger, getMeusDados); // ← DEVE VIR ANTES de /:id
+// ✅ ROTAS ESPECÍFICAS DO MÉDICO - PRIMEIRO
+router.get('/meus-dados', proteger, getMeusDados);
+router.put('/meu-perfil', proteger, medicoOnly, atualizarMeuPerfil); // ✅ NOVA ROTA
 
 // Rotas públicas
 router.get('/', listarMedicos);
