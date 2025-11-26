@@ -68,8 +68,9 @@ try {
     console.log('Rotas de usuários não carregadas:', error.message);
 }
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+// Por:
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor rodando na porta ${PORT}`);
-    console.log(`Acesse: http://localhost:${PORT}`);
+    console.log(`Ambiente: ${process.env.NODE_ENV}`);
 });
