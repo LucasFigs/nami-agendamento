@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "name": "nami-agendamento-frontend",
   "builds": [
     {
       "src": "package.json",
@@ -16,6 +17,6 @@
     }
   ],
   "env": {
-    "REACT_APP_API_URL": "https://seu-backend.railway.app/api"
+    "REACT_APP_API_URL": "https://nami-backend-taku.onrender.com/"
   }
 }
