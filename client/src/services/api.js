@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://nami-backend-taku.onrender.com/'  // ← URL do seu backend no Render
+  : 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_URL,
