@@ -345,20 +345,31 @@ exports.getMeusDados = async (req, res) => {
     try {
         const usuarioId = req.usuario.id;
         
-        console.log('Buscando dados do médico para usuário:', usuarioId);
+        console.log('🔄 Buscando dados do médico para usuário:', usuarioId);
 
         // Buscar médico pelo ID do usuário
         const medico = await Medico.findOne({ usuario: usuarioId })
             .populate('usuario', 'nome email telefone');
 
         if (!medico) {
-            return res.status(404).json({
-                success: false,
-                message: 'Médico não encontrado'
+            console.log('❌ Médico não encontrado para o usuário:', usuarioId);
+            
+            // ✅ CORREÇÃO: Retornar estrutura vazia em vez de erro 404
+            return res.json({
+                success: true,
+                data: {
+                    nome: req.usuario.nome || '',
+                    email: req.usuario.email || '',
+                    telefone: '',
+                    especialidade: '',
+                    crm: '',
+                    consultorio: '',
+                    diasAtendimento: []
+                }
             });
         }
 
-        console.log('Médico encontrado:', medico);
+        console.log('✅ Médico encontrado:', medico);
 
         res.json({
             success: true,
@@ -374,7 +385,7 @@ exports.getMeusDados = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Erro ao buscar dados do médico:', error);
+        console.error('❌ Erro ao buscar dados do médico:', error);
         res.status(500).json({
             success: false,
             message: 'Erro ao buscar dados do médico',

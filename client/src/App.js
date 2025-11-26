@@ -8,7 +8,6 @@ import LoginMedicoAdmin from './pages/LoginMedicoAdmin.js';
 import DashboardMedico from './pages/DashboardMedico.js';
 import AgendamentoConsulta from './pages/AgendamentoConsulta.js';
 import Perfil from './pages/Perfil.js';
-import HistoricoConsultas from './pages/HistoricoConsultas.js';
 import AdminDashboard from './pages/AdminDashboard.js';
 import MeusAgendamentos from './pages/MeusAgendamentos.js';
 
@@ -68,14 +67,6 @@ function App() {
             element={
               <ProtectedRoute allowedTypes={['paciente']}>
                 <Perfil />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/historico"
-            element={
-              <ProtectedRoute allowedTypes={['paciente']}>
-                <HistoricoConsultas />
               </ProtectedRoute>
             }
           />

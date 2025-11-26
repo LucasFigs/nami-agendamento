@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { medicoService } from '../services/medicoService';
+import { usuarioService } from '../services/usuarioService';
 import { authService } from '../services/authService';
 import './PerfilMedico.css';
 
@@ -30,14 +31,88 @@ const PerfilMedico = () => {
     loadPerfil();
   }, []);
 
+  // ✅ CORREÇÃO NO PerfilMedico.js - loadPerfil
   const loadPerfil = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Carregando perfil do médico...');
+
+      // ✅ CORREÇÃO: Usar medicoService em vez de agendamentoService
       const medicoData = await medicoService.getMeusDados();
-      setMedico(medicoData);
+      console.log('📊 Dados recebidos do médico:', medicoData);
+
+      if (medicoData) {
+        setMedico({
+          nome: medicoData.nome || '',
+          email: medicoData.email || '',
+          telefone: medicoData.telefone || '',
+          especialidade: medicoData.especialidade || '',
+          crm: medicoData.crm || '',
+          consultorio: medicoData.consultorio || '',
+          diasAtendimento: medicoData.diasAtendimento || [
+            { diaSemana: 'segunda', horarios: [] },
+            { diaSemana: 'terca', horarios: [] },
+            { diaSemana: 'quarta', horarios: [] },
+            { diaSemana: 'quinta', horarios: [] },
+            { diaSemana: 'sexta', horarios: [] },
+            { diaSemana: 'sabado', horarios: [] }
+          ]
+        });
+      } else {
+        console.warn('⚠️ Nenhum dado retornado do médico');
+        // ✅ FALLBACK: Usar dados do usuário logado
+        const userData = authService.getCurrentUser();
+        setMedico({
+          nome: userData?.nome || '',
+          email: userData?.email || '',
+          telefone: '',
+          especialidade: '',
+          crm: '',
+          consultorio: '',
+          diasAtendimento: [
+            { diaSemana: 'segunda', horarios: [] },
+            { diaSemana: 'terca', horarios: [] },
+            { diaSemana: 'quarta', horarios: [] },
+            { diaSemana: 'quinta', horarios: [] },
+            { diaSemana: 'sexta', horarios: [] },
+            { diaSemana: 'sabado', horarios: [] }
+          ]
+        });
+      }
     } catch (error) {
-      console.error('Erro ao carregar perfil:', error);
-      alert('Erro ao carregar perfil: ' + error.message);
+      console.error('❌ Erro detalhado ao carregar perfil:', error);
+
+      // ✅ CORREÇÃO: Mensagem de erro mais específica
+      let errorMessage = 'Erro ao carregar perfil';
+
+      if (error.response) {
+        errorMessage = `Erro ${error.response.status}: ${error.response.data?.message || 'Servidor indisponível'}`;
+      } else if (error.request) {
+        errorMessage = 'Erro de conexão. Verifique sua internet.';
+      } else {
+        errorMessage = error.message || 'Erro desconhecido';
+      }
+
+      alert(errorMessage);
+
+      // ✅ FALLBACK: Carregar dados básicos do usuário
+      const userData = authService.getCurrentUser();
+      setMedico({
+        nome: userData?.nome || 'Médico',
+        email: userData?.email || '',
+        telefone: '',
+        especialidade: '',
+        crm: '',
+        consultorio: '',
+        diasAtendimento: [
+          { diaSemana: 'segunda', horarios: [] },
+          { diaSemana: 'terca', horarios: [] },
+          { diaSemana: 'quarta', horarios: [] },
+          { diaSemana: 'quinta', horarios: [] },
+          { diaSemana: 'sexta', horarios: [] },
+          { diaSemana: 'sabado', horarios: [] }
+        ]
+      });
     } finally {
       setLoading(false);
     }
@@ -58,33 +133,37 @@ const PerfilMedico = () => {
   };
 
   const handleAlterarSenha = async () => {
-    if (senhaForm.novaSenha !== senhaForm.confirmarSenha) {
-      alert('As senhas não coincidem!');
-      return;
-    }
+  if (senhaForm.novaSenha !== senhaForm.confirmarSenha) {
+    alert('As senhas não coincidem!');
+    return;
+  }
 
-    if (senhaForm.novaSenha.length < 6) {
-      alert('A nova senha deve ter pelo menos 6 caracteres!');
-      return;
-    }
+  if (senhaForm.novaSenha.length < 6) {
+    alert('A nova senha deve ter pelo menos 6 caracteres!');
+    return;
+  }
 
-    try {
-      setSalvando(true);
-      // Aqui você implementaria a alteração de senha
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulação
-      alert('Senha alterada com sucesso!');
-      setShowSenhaModal(false);
-      setSenhaForm({ senhaAtual: '', novaSenha: '', confirmarSenha: '' });
-    } catch (error) {
-      alert('Erro ao alterar senha: ' + error.message);
-    } finally {
-      setSalvando(false);
-    }
-  };
+  try {
+    setSalvando(true);
+    
+    // ✅ CORREÇÃO: Chamar o serviço real de alteração de senha
+    await usuarioService.alterarSenha(senhaForm.senhaAtual, senhaForm.novaSenha);
+    
+    alert('✅ Senha alterada com sucesso!');
+    setShowSenhaModal(false);
+    setSenhaForm({ senhaAtual: '', novaSenha: '', confirmarSenha: '' });
+    
+  } catch (error) {
+    console.error('❌ Erro ao alterar senha:', error);
+    alert('Erro ao alterar senha: ' + (error.message || 'Verifique a senha atual'));
+  } finally {
+    setSalvando(false);
+  }
+};
 
   const handleToggleDiaAtendimento = (diaIndex) => {
     if (!editando) return;
-    
+
     const novosDias = [...medico.diasAtendimento];
     if (novosDias[diaIndex].horarios.length === 0) {
       // Ativar dia com horários padrão
@@ -93,7 +172,7 @@ const PerfilMedico = () => {
       // Desativar dia
       novosDias[diaIndex].horarios = [];
     }
-    
+
     setMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
   };
 
@@ -143,7 +222,7 @@ const PerfilMedico = () => {
             <h1>👤 Meu Perfil</h1>
             <p>Gerencie suas informações pessoais e profissionais</p>
           </div>
-          <button 
+          <button
             className="btn btn-outline"
             onClick={() => navigate('/dashboard-medico')}
           >
@@ -159,7 +238,7 @@ const PerfilMedico = () => {
             <div className="card-header">
               <h2>📝 Informações Pessoais</h2>
               {!editando && (
-                <button 
+                <button
                   className="btn btn-primary"
                   onClick={() => setEditando(true)}
                 >
@@ -167,7 +246,7 @@ const PerfilMedico = () => {
                 </button>
               )}
             </div>
-            
+
             <div className="card-body">
               <div className="form-grid">
                 <div className="form-group">
@@ -179,7 +258,7 @@ const PerfilMedico = () => {
                     disabled={!editando}
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label>Email</label>
                   <input
@@ -190,7 +269,7 @@ const PerfilMedico = () => {
                   />
                   <small>O email não pode ser alterado</small>
                 </div>
-                
+
                 <div className="form-group">
                   <label>Telefone</label>
                   <input
@@ -201,7 +280,7 @@ const PerfilMedico = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="form-grid">
                 <div className="form-group">
                   <label>Especialidade</label>
@@ -212,7 +291,7 @@ const PerfilMedico = () => {
                     disabled={!editando}
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label>CRM</label>
                   <input
@@ -222,7 +301,7 @@ const PerfilMedico = () => {
                     disabled={!editando}
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label>Consultório</label>
                   <input
@@ -234,17 +313,17 @@ const PerfilMedico = () => {
                   />
                 </div>
               </div>
-              
+
               {editando && (
                 <div className="form-actions">
-                  <button 
+                  <button
                     className="btn btn-primary"
                     onClick={handleSalvarPerfil}
                     disabled={salvando}
                   >
                     {salvando ? '💾 Salvando...' : '💾 Salvar Alterações'}
                   </button>
-                  <button 
+                  <button
                     className="btn btn-outline"
                     onClick={() => {
                       setEditando(false);
@@ -263,18 +342,18 @@ const PerfilMedico = () => {
             <div className="card-header">
               <h2>🕒 Horários de Atendimento</h2>
             </div>
-            
+
             <div className="card-body">
               <div className="horarios-section">
                 <p className="section-description">
                   Configure os dias e horários em que você atende
                 </p>
-                
+
                 <div className="dias-atendimento-grid">
                   {diasSemana.map((dia, index) => {
                     const diaAtendimento = medico.diasAtendimento.find(d => d.diaSemana === dia.key) || { horarios: [] };
                     const ativo = diaAtendimento.horarios.length > 0;
-                    
+
                     return (
                       <div key={dia.key} className="dia-atendimento-card">
                         <div className="dia-header">
@@ -339,7 +418,7 @@ const PerfilMedico = () => {
             <div className="card-header">
               <h2>🔒 Segurança</h2>
             </div>
-            
+
             <div className="card-body">
               <div className="security-actions">
                 <div className="security-item">
@@ -347,23 +426,15 @@ const PerfilMedico = () => {
                     <h4>Alterar Senha</h4>
                     <p>Atualize sua senha de acesso ao sistema</p>
                   </div>
-                  <button 
+                  <button
                     className="btn btn-warning"
                     onClick={() => setShowSenhaModal(true)}
                   >
                     🔑 Alterar Senha
                   </button>
                 </div>
-                
-                <div className="security-item">
-                  <div className="security-info">
-                    <h4>Sessões Ativas</h4>
-                    <p>Gerencie seus dispositivos conectados</p>
-                  </div>
-                  <button className="btn btn-outline">
-                    📱 Gerenciar Sessões
-                  </button>
-                </div>
+
+                {/* ✅ REMOVIDO: Sessões Ativas - Não é necessário no momento */}
               </div>
             </div>
           </div>
@@ -376,14 +447,14 @@ const PerfilMedico = () => {
           <div className="modal">
             <div className="modal-header">
               <h3>🔑 Alterar Senha</h3>
-              <button 
+              <button
                 className="btn btn-icon close-btn"
                 onClick={() => setShowSenhaModal(false)}
               >
                 ×
               </button>
             </div>
-            
+
             <div className="modal-body">
               <div className="senha-form">
                 <div className="form-group">
@@ -395,7 +466,7 @@ const PerfilMedico = () => {
                     placeholder="Digite sua senha atual"
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label>Nova Senha</label>
                   <input
@@ -405,7 +476,7 @@ const PerfilMedico = () => {
                     placeholder="Digite a nova senha"
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label>Confirmar Nova Senha</label>
                   <input
@@ -415,16 +486,16 @@ const PerfilMedico = () => {
                     placeholder="Confirme a nova senha"
                   />
                 </div>
-                
+
                 <div className="form-actions">
-                  <button 
+                  <button
                     className="btn btn-primary"
                     onClick={handleAlterarSenha}
                     disabled={salvando}
                   >
                     {salvando ? '💾 Alterando...' : '💾 Alterar Senha'}
                   </button>
-                  <button 
+                  <button
                     className="btn btn-outline"
                     onClick={() => setShowSenhaModal(false)}
                   >

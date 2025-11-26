@@ -16,6 +16,31 @@ const AgendaMedico = () => {
 
   const navigate = useNavigate();
 
+  // ✅ FUNÇÃO AUXILIAR PARA NORMALIZAR DATAS
+  const normalizarDataParaComparacao = (dataString) => {
+    if (!dataString) return '';
+    
+    console.log('📅 Normalizando data:', dataString, 'tipo:', typeof dataString);
+    
+    // Se já estiver no formato YYYY-MM-DD, retorna direto
+    if (typeof dataString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dataString)) {
+      return dataString;
+    }
+    
+    // Se for Date object ou string com timezone, converte
+    const data = new Date(dataString);
+    
+    // ✅ CORREÇÃO CRÍTICA: Usar getUTCFullYear, getUTCMonth, getUTCDate
+    const ano = data.getUTCFullYear();
+    const mes = String(data.getUTCMonth() + 1).padStart(2, '0');
+    const dia = String(data.getUTCDate()).padStart(2, '0');
+    
+    const dataNormalizada = `${ano}-${mes}-${dia}`;
+    console.log('📅 Data normalizada:', dataNormalizada);
+    
+    return dataNormalizada;
+  };
+
   useEffect(() => {
     loadAgendamentos();
   }, [filtroStatus, filtroData]);
@@ -25,6 +50,8 @@ const AgendaMedico = () => {
       setLoading(true);
       const agendamentosData = await agendamentoService.getAgendamentosMedico();
       
+      console.log('📊 AGENDAMENTOS RECEBIDOS:', agendamentosData);
+      
       let agendamentosFiltrados = agendamentosData;
       
       // Aplicar filtro de status
@@ -32,12 +59,31 @@ const AgendaMedico = () => {
         agendamentosFiltrados = agendamentosData.filter(ag => ag.status === filtroStatus);
       }
       
-      // Aplicar filtro de data
+      // ✅ CORREÇÃO DO FILTRO DE DATA
       if (filtroData) {
+        console.log('🎯 APLICANDO FILTRO DE DATA:', filtroData);
+        
         agendamentosFiltrados = agendamentosFiltrados.filter(ag => {
-          const agDate = new Date(ag.data).toISOString().split('T')[0];
-          return agDate === filtroData;
+          if (!ag.data) {
+            console.log('❌ Agendamento sem data:', ag);
+            return false;
+          }
+          
+          const dataAgendamento = normalizarDataParaComparacao(ag.data);
+          const dataFiltro = normalizarDataParaComparacao(filtroData);
+          
+          console.log('🔍 Comparação:', {
+            paciente: ag.paciente?.nome,
+            dataOriginal: ag.data,
+            dataNormalizada: dataAgendamento,
+            filtro: dataFiltro,
+            match: dataAgendamento === dataFiltro
+          });
+          
+          return dataAgendamento === dataFiltro;
         });
+        
+        console.log('📈 Agendamentos após filtro:', agendamentosFiltrados.length);
       }
       
       // Ordenar por data e horário
@@ -129,7 +175,13 @@ const AgendaMedico = () => {
   };
 
   const formatarData = (dataString) => {
-    return new Date(dataString).toLocaleDateString('pt-BR');
+    // ✅ USAR UTC para evitar problemas de timezone
+    const data = new Date(dataString);
+    const dia = String(data.getUTCDate()).padStart(2, '0');
+    const mes = String(data.getUTCMonth() + 1).padStart(2, '0');
+    const ano = data.getUTCFullYear();
+    
+    return `${dia}/${mes}/${ano}`;
   };
 
   const agendamentosFuturos = agendamentos.filter(ag => 

@@ -8,8 +8,8 @@ const {
     buscarHorariosDisponiveis,
     buscarMedicosPorEspecialidade,
     getMeusDados,
-    toggleMedicoStatus,           // ← ADICIONADA
-    criarMedicoCompleto          // ← ADICIONADA
+    toggleMedicoStatus,
+    criarMedicoCompleto
 } = require('../controllers/medicoController');
 
 const proteger = require('../middleware/authMiddleware');
@@ -17,20 +17,22 @@ const adminOnly = require('../middleware/adminMiddleware');
 
 const router = express.Router();
 
+// ✅ CORREÇÃO: Rotas específicas PRIMEIRO
+router.get('/meus-dados', proteger, getMeusDados); // ← DEVE VIR ANTES de /:id
+
 // Rotas públicas
 router.get('/', listarMedicos);
-router.get('/:id', buscarMedicoPorId);
 router.get('/:id/horarios-disponiveis', buscarHorariosDisponiveis);
 router.get('/especialidade/:especialidade', buscarMedicosPorEspecialidade);
 
-// NOVA ROTA: Dados do médico logado
-router.get('/meus-dados', proteger, getMeusDados);
+// Rotas com :id - devem vir DEPOIS das rotas específicas
+router.get('/:id', buscarMedicoPorId);
 
 // Rotas protegidas - apenas admin
 router.post('/', proteger, adminOnly, criarMedico);
-router.post('/completo', proteger, adminOnly, criarMedicoCompleto); // ← AGORA FUNCIONA
+router.post('/completo', proteger, adminOnly, criarMedicoCompleto);
 router.put('/:id', proteger, adminOnly, atualizarMedico);
-router.put('/:id/toggle-status', proteger, adminOnly, toggleMedicoStatus); // ← AGORA FUNCIONA
+router.put('/:id/toggle-status', proteger, adminOnly, toggleMedicoStatus);
 router.delete('/:id', proteger, adminOnly, deletarMedico);
 
 module.exports = router;
