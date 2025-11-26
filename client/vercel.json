@@ -1,9 +1,8 @@
 {
   "version": 2,
-  "name": "nami-agendamento-frontend",
   "builds": [
     {
-      "src": "package.json",
+      "src": "client/package.json",
       "use": "@vercel/static-build",
       "config": {
         "distDir": "build"
@@ -13,10 +12,10 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/client/build/$1"
     }
   ],
   "env": {
-    "REACT_APP_API_URL": "https://nami-backend-taku.onrender.com/"
+    "REACT_APP_API_URL": "https://nami-backend-taku.onrender.com/api"
   }
 }

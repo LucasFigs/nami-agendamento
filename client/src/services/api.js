@@ -1,14 +1,15 @@
 import axios from 'axios';
 
-const API_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://nami-backend-taku.onrender.com/'  // ← URL do seu backend no Render
-  : 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'https://nami-backend-taku.onrender.com/api';
+
+console.log('🔧 API URL Configurada:', API_URL);
 
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000,
 });
 
 // Interceptor para adicionar token às requisições
