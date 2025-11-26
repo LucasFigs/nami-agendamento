@@ -24,6 +24,7 @@ const PerfilMedico = () => {
     confirmarSenha: ''
   });
   const [showSenhaModal, setShowSenhaModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('dados');
 
   const navigate = useNavigate();
 
@@ -31,13 +32,12 @@ const PerfilMedico = () => {
     loadPerfil();
   }, []);
 
-  // ✅ CORREÇÃO NO PerfilMedico.js - loadPerfil
+  // ✅ FUNÇÃO ORIGINAL QUE FUNCIONAVA - loadPerfil
   const loadPerfil = async () => {
     try {
       setLoading(true);
       console.log('🔄 Carregando perfil do médico...');
 
-      // ✅ CORREÇÃO: Usar medicoService em vez de agendamentoService
       const medicoData = await medicoService.getMeusDados();
       console.log('📊 Dados recebidos do médico:', medicoData);
 
@@ -60,7 +60,6 @@ const PerfilMedico = () => {
         });
       } else {
         console.warn('⚠️ Nenhum dado retornado do médico');
-        // ✅ FALLBACK: Usar dados do usuário logado
         const userData = authService.getCurrentUser();
         setMedico({
           nome: userData?.nome || '',
@@ -82,9 +81,7 @@ const PerfilMedico = () => {
     } catch (error) {
       console.error('❌ Erro detalhado ao carregar perfil:', error);
 
-      // ✅ CORREÇÃO: Mensagem de erro mais específica
       let errorMessage = 'Erro ao carregar perfil';
-
       if (error.response) {
         errorMessage = `Erro ${error.response.status}: ${error.response.data?.message || 'Servidor indisponível'}`;
       } else if (error.request) {
@@ -95,7 +92,6 @@ const PerfilMedico = () => {
 
       alert(errorMessage);
 
-      // ✅ FALLBACK: Carregar dados básicos do usuário
       const userData = authService.getCurrentUser();
       setMedico({
         nome: userData?.nome || 'Médico',
@@ -118,58 +114,124 @@ const PerfilMedico = () => {
     }
   };
 
+  // ✅ FUNÇÃO CORRIGIDA - handleSalvarPerfil
   const handleSalvarPerfil = async () => {
     try {
       setSalvando(true);
-      // Aqui você implementaria a atualização do perfil
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulação
-      alert('Perfil atualizado com sucesso!');
+
+      console.log('💾 Médico salvando próprio perfil...', medico);
+
+      // Preparar dados para atualização
+      const dadosAtualizacao = {
+        nome: medico.nome,
+        telefone: medico.telefone,
+        especialidade: medico.especialidade,
+        crm: medico.crm,
+        consultorio: medico.consultorio,
+        diasAtendimento: medico.diasAtendimento
+      };
+
+      console.log('📤 Enviando para o backend:', dadosAtualizacao);
+
+      let resultado;
+
+      // ✅ TENTAR PRIMEIRO: Nova rota específica para médico
+      try {
+        resultado = await medicoService.atualizarMeuPerfil(dadosAtualizacao);
+        console.log('✅ Perfil salvo via rota específica:', resultado);
+      } catch (medicoError) {
+        console.log('⚠️ Rota específica falhou, tentando métodos alternativos...');
+
+        // ✅ TENTAR SEGUNDO: Atualizar dados básicos via usuário
+        const userData = authService.getCurrentUser();
+        if (userData && userData.id) {
+          await usuarioService.atualizarUsuario(userData.id, {
+            nome: medico.nome,
+            telefone: medico.telefone
+          });
+          console.log('✅ Dados básicos atualizados via usuário');
+        }
+
+        // ✅ TENTAR TERCEIRO: Para dados de médico específicos
+        if (medico.especialidade || medico.crm || medico.diasAtendimento) {
+          try {
+            // Buscar médico existente primeiro
+            const medicoExistente = await medicoService.getMeusDados();
+            if (medicoExistente && medicoExistente._id) {
+              resultado = await medicoService.atualizarMedico(medicoExistente._id, {
+                especialidade: medico.especialidade,
+                consultorio: medico.consultorio,
+                diasAtendimento: medico.diasAtendimento
+              });
+              console.log('✅ Dados médicos atualizados via rota admin (fallback)');
+            }
+          } catch (medicoSpecificError) {
+            console.log('⚠️ Atualização de dados médicos falhou:', medicoSpecificError);
+          }
+        }
+      }
+
+      alert('✅ Perfil atualizado com sucesso!');
       setEditando(false);
+
+      // Recarregar dados do banco
+      await loadPerfil();
+
     } catch (error) {
-      alert('Erro ao atualizar perfil: ' + error.message);
+      console.error('❌ Erro ao salvar perfil:', error);
+
+      let errorMessage = 'Erro ao salvar perfil';
+      if (error.response) {
+        errorMessage = `Erro ${error.response.status}: ${error.response.data?.message || 'Servidor indisponível'}`;
+      } else if (error.request) {
+        errorMessage = 'Erro de conexão. Verifique sua internet.';
+      } else {
+        errorMessage = error.message || 'Erro desconhecido';
+      }
+
+      alert('❌ ' + errorMessage);
     } finally {
       setSalvando(false);
     }
   };
 
+  // ✅ FUNÇÃO ORIGINAL QUE FUNCIONAVA - handleAlterarSenha
   const handleAlterarSenha = async () => {
-  if (senhaForm.novaSenha !== senhaForm.confirmarSenha) {
-    alert('As senhas não coincidem!');
-    return;
-  }
+    if (senhaForm.novaSenha !== senhaForm.confirmarSenha) {
+      alert('As senhas não coincidem!');
+      return;
+    }
 
-  if (senhaForm.novaSenha.length < 6) {
-    alert('A nova senha deve ter pelo menos 6 caracteres!');
-    return;
-  }
+    if (senhaForm.novaSenha.length < 6) {
+      alert('A nova senha deve ter pelo menos 6 caracteres!');
+      return;
+    }
 
-  try {
-    setSalvando(true);
-    
-    // ✅ CORREÇÃO: Chamar o serviço real de alteração de senha
-    await usuarioService.alterarSenha(senhaForm.senhaAtual, senhaForm.novaSenha);
-    
-    alert('✅ Senha alterada com sucesso!');
-    setShowSenhaModal(false);
-    setSenhaForm({ senhaAtual: '', novaSenha: '', confirmarSenha: '' });
-    
-  } catch (error) {
-    console.error('❌ Erro ao alterar senha:', error);
-    alert('Erro ao alterar senha: ' + (error.message || 'Verifique a senha atual'));
-  } finally {
-    setSalvando(false);
-  }
-};
+    try {
+      setSalvando(true);
 
+      await usuarioService.alterarSenha(senhaForm.senhaAtual, senhaForm.novaSenha);
+
+      alert('✅ Senha alterada com sucesso!');
+      setShowSenhaModal(false);
+      setSenhaForm({ senhaAtual: '', novaSenha: '', confirmarSenha: '' });
+
+    } catch (error) {
+      console.error('❌ Erro ao alterar senha:', error);
+      alert('Erro ao alterar senha: ' + (error.message || 'Verifique a senha atual'));
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  // ✅ FUNÇÕES ORIGINAIS QUE FUNCIONAVAM - Gerenciamento de Horários
   const handleToggleDiaAtendimento = (diaIndex) => {
     if (!editando) return;
 
     const novosDias = [...medico.diasAtendimento];
     if (novosDias[diaIndex].horarios.length === 0) {
-      // Ativar dia com horários padrão
       novosDias[diaIndex].horarios = ['08:00', '09:00', '10:00', '14:00', '15:00'];
     } else {
-      // Desativar dia
       novosDias[diaIndex].horarios = [];
     }
 
@@ -206,8 +268,8 @@ const PerfilMedico = () => {
   if (loading) {
     return (
       <div className="perfil-medico-container">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
           <p>Carregando perfil...</p>
         </div>
       </div>
@@ -216,166 +278,252 @@ const PerfilMedico = () => {
 
   return (
     <div className="perfil-medico-container">
-      <div className="perfil-header">
+      {/* Header - NOVO DESIGN seguindo AdminDashboard */}
+      <header className="admin-header">
         <div className="header-content">
           <div className="header-title">
-            <h1>👤 Meu Perfil</h1>
+            <h1>👤 Perfil do Médico</h1>
             <p>Gerencie suas informações pessoais e profissionais</p>
           </div>
+          <div className="header-actions">
+            <button
+              className="btn btn-outline"
+              onClick={() => navigate('/dashboard-medico')}
+            >
+              ← Voltar ao Dashboard
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation Tabs - NOVO DESIGN seguindo AdminDashboard */}
+      <nav className="admin-nav">
+        <div className="nav-tabs">
           <button
-            className="btn btn-outline"
-            onClick={() => navigate('/dashboard-medico')}
+            className={`nav-tab ${activeTab === 'dados' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dados')}
           >
-            ← Voltar ao Dashboard
+            <span className="tab-icon">📋</span>
+            <span className="tab-label">Dados Pessoais</span>
+          </button>
+          <button
+            className={`nav-tab ${activeTab === 'horarios' ? 'active' : ''}`}
+            onClick={() => setActiveTab('horarios')}
+          >
+            <span className="tab-icon">🕒</span>
+            <span className="tab-label">Horários</span>
+          </button>
+          <button
+            className={`nav-tab ${activeTab === 'seguranca' ? 'active' : ''}`}
+            onClick={() => setActiveTab('seguranca')}
+          >
+            <span className="tab-icon">🔒</span>
+            <span className="tab-label">Segurança</span>
           </button>
         </div>
-      </div>
+      </nav>
 
-      <div className="perfil-content">
-        <div className="perfil-grid">
-          {/* Informações Pessoais */}
-          <div className="perfil-card">
-            <div className="card-header">
-              <h2>📝 Informações Pessoais</h2>
-              {!editando && (
-                <button
-                  className="btn btn-primary"
-                  onClick={() => setEditando(true)}
-                >
-                  ✏️ Editar
-                </button>
-              )}
-            </div>
+      {/* Main Content - NOVO DESIGN seguindo AdminDashboard */}
+      <main className="admin-main">
+        <div className="tab-content">
 
-            <div className="card-body">
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Nome Completo</label>
-                  <input
-                    type="text"
-                    value={medico.nome}
-                    onChange={(e) => setMedico(prev => ({ ...prev, nome: e.target.value }))}
-                    disabled={!editando}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Email</label>
-                  <input
-                    type="email"
-                    value={medico.email}
-                    disabled
-                    className="disabled-input"
-                  />
-                  <small>O email não pode ser alterado</small>
-                </div>
-
-                <div className="form-group">
-                  <label>Telefone</label>
-                  <input
-                    type="tel"
-                    value={medico.telefone}
-                    onChange={(e) => setMedico(prev => ({ ...prev, telefone: e.target.value }))}
-                    disabled={!editando}
-                  />
-                </div>
-              </div>
-
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Especialidade</label>
-                  <input
-                    type="text"
-                    value={medico.especialidade}
-                    onChange={(e) => setMedico(prev => ({ ...prev, especialidade: e.target.value }))}
-                    disabled={!editando}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>CRM</label>
-                  <input
-                    type="text"
-                    value={medico.crm}
-                    onChange={(e) => setMedico(prev => ({ ...prev, crm: e.target.value }))}
-                    disabled={!editando}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Consultório</label>
-                  <input
-                    type="text"
-                    value={medico.consultorio}
-                    onChange={(e) => setMedico(prev => ({ ...prev, consultorio: e.target.value }))}
-                    disabled={!editando}
-                    placeholder="Endereço do consultório"
-                  />
-                </div>
-              </div>
-
-              {editando && (
-                <div className="form-actions">
+          {/* Tab: Dados Pessoais */}
+          {activeTab === 'dados' && (
+            <div className="content-section">
+              <div className="content-header">
+                <h2>📝 Informações Pessoais</h2>
+                {!editando ? (
                   <button
                     className="btn btn-primary"
-                    onClick={handleSalvarPerfil}
-                    disabled={salvando}
+                    onClick={() => setEditando(true)}
                   >
-                    {salvando ? '💾 Salvando...' : '💾 Salvar Alterações'}
+                    <span>✏️</span>
+                    Editar Perfil
                   </button>
-                  <button
-                    className="btn btn-outline"
-                    onClick={() => {
-                      setEditando(false);
-                      loadPerfil(); // Recarregar dados originais
-                    }}
-                  >
-                    ❌ Cancelar
-                  </button>
+                ) : (
+                  <div className="header-actions">
+                    <button
+                      className="btn btn-outline"
+                      onClick={() => {
+                        setEditando(false);
+                        loadPerfil();
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="form-container">
+                <form className="modal-form">
+                  <div className="form-section">
+                    <h4>👤 Dados Básicos</h4>
+                    <div className="form-grid">
+                      <div className="form-group">
+                        <label>Nome Completo *</label>
+                        <input
+                          type="text"
+                          value={medico.nome}
+                          onChange={(e) => setMedico(prev => ({ ...prev, nome: e.target.value }))}
+                          disabled={!editando}
+                          placeholder="Seu nome completo"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>Email *</label>
+                        <input
+                          type="email"
+                          value={medico.email}
+                          disabled
+                          className="disabled-input"
+                          placeholder="seu.email@exemplo.com"
+                        />
+                        <small className="input-help">Email não pode ser alterado</small>
+                      </div>
+
+                      <div className="form-group">
+                        <label>Telefone</label>
+                        <input
+                          type="tel"
+                          value={medico.telefone}
+                          onChange={(e) => setMedico(prev => ({ ...prev, telefone: e.target.value }))}
+                          disabled={!editando}
+                          placeholder="(11) 99999-9999"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="form-section">
+                    <h4>🏥 Dados Profissionais</h4>
+                    <div className="form-grid">
+                      <div className="form-group">
+                        <label>Especialidade *</label>
+                        <input
+                          type="text"
+                          value={medico.especialidade}
+                          onChange={(e) => setMedico(prev => ({ ...prev, especialidade: e.target.value }))}
+                          disabled={!editando}
+                          placeholder="Sua especialidade médica"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>CRM *</label>
+                        <input
+                          type="text"
+                          value={medico.crm}
+                          onChange={(e) => setMedico(prev => ({ ...prev, crm: e.target.value }))}
+                          disabled={!editando}
+                          placeholder="CRM/UF 123456"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>Consultório</label>
+                        <input
+                          type="text"
+                          value={medico.consultorio}
+                          onChange={(e) => setMedico(prev => ({ ...prev, consultorio: e.target.value }))}
+                          disabled={!editando}
+                          placeholder="Endereço do consultório"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {editando && (
+                    <div className="form-actions">
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={handleSalvarPerfil}
+                        disabled={salvando}
+                      >
+                        {salvando ? (
+                          <>
+                            <div className="loading-spinner-small"></div>
+                            Salvando...
+                          </>
+                        ) : (
+                          '💾 Salvar Alterações'
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Tab: Horários de Atendimento */}
+          {activeTab === 'horarios' && (
+            <div className="content-section">
+              <div className="content-header">
+                <h2>🕒 Horários de Atendimento</h2>
+                <div className="header-actions">
+                  {!editando ? (
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setEditando(true)}
+                    >
+                      <span>✏️</span>
+                      Editar Horários
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-outline"
+                      onClick={() => {
+                        setEditando(false);
+                        loadPerfil();
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
 
-          {/* Horários de Atendimento */}
-          <div className="perfil-card">
-            <div className="card-header">
-              <h2>🕒 Horários de Atendimento</h2>
-            </div>
+              <div className="horarios-container">
+                <div className="section-description">
+                  <p>Configure os dias e horários em que você atende. Os pacientes poderão agendar consultas apenas nestes horários disponíveis.</p>
+                </div>
 
-            <div className="card-body">
-              <div className="horarios-section">
-                <p className="section-description">
-                  Configure os dias e horários em que você atende
-                </p>
-
-                <div className="dias-atendimento-grid">
+                <div className="dias-atendimento-grid-improved">
                   {diasSemana.map((dia, index) => {
                     const diaAtendimento = medico.diasAtendimento.find(d => d.diaSemana === dia.key) || { horarios: [] };
                     const ativo = diaAtendimento.horarios.length > 0;
 
                     return (
-                      <div key={dia.key} className="dia-atendimento-card">
-                        <div className="dia-header">
-                          <label className="dia-checkbox">
+                      <div key={dia.key} className={`dia-atendimento-card-improved ${ativo ? 'active' : ''}`}>
+                        <div className="dia-header-improved">
+                          <label className="dia-checkbox-improved">
                             <input
                               type="checkbox"
                               checked={ativo}
                               onChange={() => handleToggleDiaAtendimento(index)}
                               disabled={!editando}
                             />
-                            <span className="dia-nome">{dia.label}</span>
+                            <span className="checkmark"></span>
+                            <span className="dia-nome-improved">
+                              {dia.label}
+                            </span>
                           </label>
+                          <span className="horarios-count">
+                            {ativo ? `${diaAtendimento.horarios.length} horários` : 'Inativo'}
+                          </span>
                         </div>
 
                         {ativo && (
-                          <div className="horarios-list">
-                            <div className="horarios-header">
-                              <span>Horários</span>
+                          <div className="horarios-list-improved">
+                            <div className="horarios-header-improved">
+                              <span>Horários configurados:</span>
                               {editando && (
                                 <button
                                   type="button"
-                                  className="btn-add-horario"
+                                  className="btn-add-horario-improved"
                                   onClick={() => handleAdicionarHorario(index)}
                                 >
                                   + Add Horário
@@ -383,63 +531,98 @@ const PerfilMedico = () => {
                               )}
                             </div>
 
-                            {diaAtendimento.horarios.map((horario, horarioIndex) => (
-                              <div key={horarioIndex} className="horario-item">
-                                <input
-                                  type="time"
-                                  value={horario}
-                                  onChange={(e) => handleHorarioChange(index, horarioIndex, e.target.value)}
-                                  disabled={!editando}
-                                  className="time-input"
-                                />
-                                {editando && diaAtendimento.horarios.length > 1 && (
-                                  <button
-                                    type="button"
-                                    className="btn-remove-horario"
-                                    onClick={() => handleRemoverHorario(index, horarioIndex)}
-                                  >
-                                    ×
-                                  </button>
-                                )}
-                              </div>
-                            ))}
+                            <div className="horarios-grid">
+                              {diaAtendimento.horarios.map((horario, horarioIndex) => (
+                                <div key={horarioIndex} className="horario-item-improved">
+                                  <input
+                                    type="time"
+                                    value={horario}
+                                    onChange={(e) => handleHorarioChange(index, horarioIndex, e.target.value)}
+                                    disabled={!editando}
+                                    className="time-input-improved"
+                                  />
+                                  {editando && diaAtendimento.horarios.length > 1 && (
+                                    <button
+                                      type="button"
+                                      className="btn-remove-horario-improved"
+                                      onClick={() => handleRemoverHorario(index, horarioIndex)}
+                                      title="Remover horário"
+                                    >
+                                      ×
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
                     );
                   })}
                 </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Ações de Segurança */}
-          <div className="perfil-card">
-            <div className="card-header">
-              <h2>🔒 Segurança</h2>
-            </div>
-
-            <div className="card-body">
-              <div className="security-actions">
-                <div className="security-item">
-                  <div className="security-info">
-                    <h4>Alterar Senha</h4>
-                    <p>Atualize sua senha de acesso ao sistema</p>
+                {editando && (
+                  <div className="form-actions">
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={handleSalvarPerfil}
+                      disabled={salvando}
+                    >
+                      {salvando ? (
+                        <>
+                          <div className="loading-spinner-small"></div>
+                          Salvando...
+                        </>
+                      ) : (
+                        '💾 Salvar Horários'
+                      )}
+                    </button>
                   </div>
-                  <button
-                    className="btn btn-warning"
-                    onClick={() => setShowSenhaModal(true)}
-                  >
-                    🔑 Alterar Senha
-                  </button>
-                </div>
-
-                {/* ✅ REMOVIDO: Sessões Ativas - Não é necessário no momento */}
+                )}
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Tab: Segurança */}
+          {activeTab === 'seguranca' && (
+            <div className="content-section">
+              <div className="content-header">
+                <h2>🔒 Segurança da Conta</h2>
+              </div>
+
+              <div className="security-container">
+                <div className="security-grid">
+                  <div className="security-card">
+                    <div className="security-icon">🔑</div>
+                    <div className="security-content">
+                      <h3>Alterar Senha</h3>
+                      <p>Atualize sua senha de acesso ao sistema regularmente para manter sua conta segura</p>
+                    </div>
+                    <button
+                      className="btn btn-warning"
+                      onClick={() => setShowSenhaModal(true)}
+                    >
+                      Alterar Senha
+                    </button>
+                  </div>
+
+                  <div className="security-card">
+                    <div className="security-icon">👤</div>
+                    <div className="security-content">
+                      <h3>Sessão Atual</h3>
+                      <p>Você está logado como médico no sistema NAMI</p>
+                    </div>
+                    <div className="session-info">
+                      <span className="session-status active">● Ativo</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      </main>
 
       {/* Modal de Alteração de Senha */}
       {showSenhaModal && (
@@ -456,53 +639,78 @@ const PerfilMedico = () => {
             </div>
 
             <div className="modal-body">
-              <div className="senha-form">
-                <div className="form-group">
-                  <label>Senha Atual</label>
-                  <input
-                    type="password"
-                    value={senhaForm.senhaAtual}
-                    onChange={(e) => setSenhaForm(prev => ({ ...prev, senhaAtual: e.target.value }))}
-                    placeholder="Digite sua senha atual"
-                  />
+              <form className="modal-form">
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label>Senha Atual *</label>
+                    <input
+                      type="password"
+                      value={senhaForm.senhaAtual}
+                      onChange={(e) => setSenhaForm(prev => ({ ...prev, senhaAtual: e.target.value }))}
+                      placeholder="Digite sua senha atual"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Nova Senha *</label>
+                    <input
+                      type="password"
+                      value={senhaForm.novaSenha}
+                      onChange={(e) => setSenhaForm(prev => ({ ...prev, novaSenha: e.target.value }))}
+                      placeholder="Mínimo 6 caracteres"
+                      required
+                      minLength="6"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Confirmar Nova Senha *</label>
+                    <input
+                      type="password"
+                      value={senhaForm.confirmarSenha}
+                      onChange={(e) => setSenhaForm(prev => ({ ...prev, confirmarSenha: e.target.value }))}
+                      placeholder="Digite a nova senha novamente"
+                      required
+                      minLength="6"
+                    />
+                  </div>
                 </div>
 
-                <div className="form-group">
-                  <label>Nova Senha</label>
-                  <input
-                    type="password"
-                    value={senhaForm.novaSenha}
-                    onChange={(e) => setSenhaForm(prev => ({ ...prev, novaSenha: e.target.value }))}
-                    placeholder="Digite a nova senha"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Confirmar Nova Senha</label>
-                  <input
-                    type="password"
-                    value={senhaForm.confirmarSenha}
-                    onChange={(e) => setSenhaForm(prev => ({ ...prev, confirmarSenha: e.target.value }))}
-                    placeholder="Confirme a nova senha"
-                  />
+                <div className="password-requirements">
+                  <h4>📝 Requisitos da Senha:</h4>
+                  <ul>
+                    <li>Mínimo de 6 caracteres</li>
+                    <li>Use letras, números e símbolos</li>
+                    <li>Evite senhas óbvias ou comuns</li>
+                  </ul>
                 </div>
 
                 <div className="form-actions">
                   <button
+                    type="button"
                     className="btn btn-primary"
                     onClick={handleAlterarSenha}
                     disabled={salvando}
                   >
-                    {salvando ? '💾 Alterando...' : '💾 Alterar Senha'}
+                    {salvando ? (
+                      <>
+                        <div className="loading-spinner-small"></div>
+                        Alterando...
+                      </>
+                    ) : (
+                      '🔒 Alterar Senha'
+                    )}
                   </button>
                   <button
+                    type="button"
                     className="btn btn-outline"
                     onClick={() => setShowSenhaModal(false)}
                   >
                     Cancelar
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         </div>

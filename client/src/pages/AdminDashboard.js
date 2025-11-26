@@ -1206,7 +1206,7 @@ const AdminDashboard = () => {
                 <div className="kpi-icon">📊</div>
                 <div className="kpi-content">
                   <div className="kpi-value">{relatorios.consultasPorMes?.reduce((sum, item) => sum + item.total, 0) || 0}</div>
-                  <div className="kpi-label">Total de Consultas</div>
+                  <div className="kpi-label">Consultas</div>
                   <div className="kpi-trend">
                     <span className="trend-up">↗️</span>
                     <span>Período selecionado</span>
@@ -1220,7 +1220,7 @@ const AdminDashboard = () => {
                   <div className="kpi-value">
                     {relatorios.taxas?.comparecimento ? `${Math.round(relatorios.taxas.comparecimento)}%` : '0%'}
                   </div>
-                  <div className="kpi-label">Taxa de Comparecimento</div>
+                  <div className="kpi-label">Comparecimento</div>
                   <div className="kpi-trend">
                     <span className="trend-up">📈</span>
                     <span>Eficiência do sistema</span>
@@ -1234,7 +1234,7 @@ const AdminDashboard = () => {
                   <div className="kpi-value">
                     {relatorios.taxas?.cancelamento ? `${Math.round(relatorios.taxas.cancelamento)}%` : '0%'}
                   </div>
-                  <div className="kpi-label">Taxa de Cancelamento</div>
+                  <div className="kpi-label">Cancelamento</div>
                   <div className="kpi-trend">
                     <span className="trend-down">📉</span>
                     <span>Monitoramento</span>

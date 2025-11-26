@@ -1486,3 +1486,272 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+/* 🔧 CORREÇÃO: Tab Content com padding adequado */
+.admin-container .tab-content {
+  padding: 0;
+}
+
+.admin-container .content-section {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-light);
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+/* Header interno das sections */
+.admin-container .content-header {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--background);
+  margin-bottom: 0;
+}
+
+.admin-container .content-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+/* Conteúdo interno com padding */
+.admin-container .content-body {
+  padding: 2rem;
+}
+
+/* Stats Grid dentro do tab-content */
+.admin-container .tab-content .stats-grid {
+  padding: 1rem 2rem 1rem 2rem;
+  margin-bottom: 0;
+}
+
+/* Quick Actions dentro do tab-content */
+.admin-container .tab-content .quick-actions {
+  padding: 1rem 2rem 1rem 2rem;
+}
+
+/* Table Container dentro do tab-content */
+.admin-container .tab-content .table-container {
+  margin: 1rem 2rem 1rem 2rem;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* Empty State dentro do tab-content */
+.admin-container .tab-content .empty-state {
+  padding: 3rem 2rem;
+  margin: 1rem 2rem 1rem 2rem;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-light);
+}
+
+/* KPI Grid dentro do tab-content (Relatórios) */
+.admin-container .tab-content .kpi-grid {
+  padding: 1rem 2rem 1rem 2rem;
+  margin-bottom: 0;
+}
+
+/* Charts Grid dentro do tab-content */
+.admin-container .tab-content .charts-grid {
+  padding: 1rem 2rem 1rem 2rem;
+  margin-bottom: 0;
+}
+
+/* Detailed Reports dentro do tab-content */
+.admin-container .tab-content .detailed-reports {
+  padding: 1rem 2rem 1rem 2rem;
+}
+
+/* Content Header específico para tabs */
+.admin-container .tab-content .content-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-light);
+  padding: 1.5rem 2rem;
+  margin-bottom: 0;
+}
+
+/* Form Container dentro do tab-content */
+.admin-container .tab-content .form-container {
+  padding: 2rem;
+}
+
+/* Horarios Container dentro do tab-content */
+.admin-container .tab-content .horarios-container {
+  padding: 2rem;
+}
+
+/* Security Container dentro do tab-content */
+.admin-container .tab-content .security-container {
+  padding: 2rem;
+}
+
+/* 🔧 CORREÇÕES ESPECÍFICAS PARA AS TABS */
+
+/* Dashboard Tab */
+.admin-container .tab-content .stats-grid + .quick-actions {
+  padding-top: 0;
+}
+
+/* Médicos Tab - Correção do botão "Adicionar Médico" */
+.admin-container .tab-content .content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* Usuários Tab */
+.admin-container .tab-content .table-container {
+  border: 1px solid var(--border-light);
+}
+
+/* Consultas Tab - Filters */
+.admin-container .tab-content .filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.admin-container .tab-content .filters select {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+/* Relatórios Tab - Header Controls */
+.admin-container .tab-content .header-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.admin-container .tab-content .periodo-filtros {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-container .tab-content .period-select {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+/* 🔧 CORREÇÃO: Garantir que todos os elementos dentro do tab-content tenham espaçamento adequado */
+
+/* Cards dentro do tab-content */
+.admin-container .tab-content .card {
+  margin: 1rem 2rem 1rem 2rem;
+}
+
+/* Grids dentro do tab-content */
+.admin-container .tab-content .cards-grid {
+  padding: 1rem 2rem 21em 2rem;
+  gap: 1.5rem;
+}
+
+/* Notification Banner */
+.admin-container .tab-content .notification-banner {
+  margin: 1rem 2rem 1rem 2rem;
+}
+
+/* Loading dentro do tab-content */
+.admin-container .tab-content .loading-overlay {
+  margin: 2rem;
+  border-radius: var(--radius);
+}
+
+/* 🔧 CORREÇÃO ESPECÍFICA PARA O DASHBOARD (primeira tab) */
+.admin-container .tab-content > div:first-child .stats-grid {
+  padding-top: 2rem;
+}
+
+/* 🔧 CORREÇÃO: Garantir consistência entre todas as tabs */
+.admin-container .tab-content > div {
+  padding-bottom: 0;
+}
+
+/* 🔧 CORREÇÃO: Ajuste fino para elementos específicos */
+.admin-container .tab-content .section-header {
+  padding: 1rem 2rem 1rem 2rem;
+  margin-bottom: 0;
+}
+
+.admin-container .tab-content .section-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* 🔧 CORREÇÃO: Para conteúdo sem container específico */
+.admin-container .tab-content > div > *:not(.content-header):not(.stats-grid):not(.quick-actions):not(.table-container):not(.empty-state) {
+  padding: 1rem 2rem 1rem 2rem;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .admin-container .tab-content .content-header {
+    padding: 1rem 1.5rem;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .admin-container .tab-content .content-body,
+  .admin-container .tab-content .stats-grid,
+  .admin-container .tab-content .quick-actions,
+  .admin-container .tab-content .table-container,
+  .admin-container .tab-content .empty-state,
+  .admin-container .tab-content .kpi-grid,
+  .admin-container .tab-content .charts-grid,
+  .admin-container .tab-content .detailed-reports,
+  .admin-container .tab-content .form-container,
+  .admin-container .tab-content .horarios-container,
+  .admin-container .tab-content .security-container {
+    padding: 1.5rem;
+  }
+  
+  .admin-container .tab-content .cards-grid {
+    padding: 1.5rem 1.5rem 1.5rem 1.5rem;
+    gap: 1rem;
+  }
+  
+  .admin-container .tab-content .notification-banner {
+    margin: 1.5rem 1.5rem 1.5rem 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-container .tab-content .content-header,
+  .admin-container .tab-content .content-body,
+  .admin-container .tab-content .stats-grid,
+  .admin-container .tab-content .quick-actions,
+  .admin-container .tab-content .table-container,
+  .admin-container .tab-content .empty-state,
+  .admin-container .tab-content .kpi-grid,
+  .admin-container .tab-content .charts-grid,
+  .admin-container .tab-content .detailed-reports,
+  .admin-container .tab-content .form-container,
+  .admin-container .tab-content .horarios-container,
+  .admin-container .tab-content .security-container {
+    padding: 1rem;
+  }
+  
+  .admin-container .tab-content .cards-grid {
+    padding: 1rem 1rem 1rem 1rem;
+  }
+  
+  .admin-container .tab-content .notification-banner {
+    margin: 1rem 1rem 1rem 1rem;
+  }
+}

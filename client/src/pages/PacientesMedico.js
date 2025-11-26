@@ -29,11 +29,19 @@ const PacientesMedico = () => {
       agendamentos.forEach(agendamento => {
         if (agendamento.paciente && !pacientesMap.has(agendamento.paciente._id)) {
           pacientesMap.set(agendamento.paciente._id, true);
+          
+          const consultasPaciente = agendamentos.filter(ag => ag.paciente?._id === agendamento.paciente._id);
+          const consultasRealizadas = consultasPaciente.filter(ag => ag.status === 'realizado').length;
+          const consultasCanceladas = consultasPaciente.filter(ag => ag.status === 'cancelado').length;
+          
           pacientesUnicos.push({
             ...agendamento.paciente,
-            totalConsultas: agendamentos.filter(ag => ag.paciente?._id === agendamento.paciente._id).length,
-            ultimaConsulta: agendamentos
-              .filter(ag => ag.paciente?._id === agendamento.paciente._id)
+            totalConsultas: consultasPaciente.length,
+            consultasRealizadas,
+            consultasCanceladas,
+            taxaComparecimento: consultasPaciente.length > 0 ? 
+              Math.round((consultasRealizadas / consultasPaciente.length) * 100) : 0,
+            ultimaConsulta: consultasPaciente
               .sort((a, b) => new Date(b.data) - new Date(a.data))[0]
           });
         }
@@ -42,7 +50,7 @@ const PacientesMedico = () => {
       setPacientes(pacientesUnicos);
     } catch (error) {
       console.error('Erro ao carregar pacientes:', error);
-      alert('Erro ao carregar pacientes: ' + error.message);
+      alert('❌ Erro ao carregar pacientes: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -59,13 +67,12 @@ const PacientesMedico = () => {
       setHistoricoPaciente(historico);
       setShowModal(true);
     } catch (error) {
-      alert('Erro ao carregar histórico: ' + error.message);
+      alert('❌ Erro ao carregar histórico: ' + error.message);
     }
   };
 
   const handleEnviarMensagem = (paciente) => {
-    // Simulação de envio de mensagem
-    alert(`Mensagem enviada para ${paciente.nome}`);
+    alert(`📧 Mensagem enviada para ${paciente.nome}`);
   };
 
   const pacientesFiltrados = pacientes.filter(paciente =>
@@ -77,7 +84,7 @@ const PacientesMedico = () => {
       case 'realizado': return '#10b981';
       case 'cancelado': return '#ef4444';
       case 'agendado': return '#f59e0b';
-      default: return '#6b7280';
+      default: return '#64748b';
     }
   };
 
@@ -85,123 +92,189 @@ const PacientesMedico = () => {
     return new Date(dataString).toLocaleDateString('pt-BR');
   };
 
+  const getPerformanceColor = (taxa) => {
+    if (taxa >= 80) return '#10b981';
+    if (taxa >= 60) return '#f59e0b';
+    return '#ef4444';
+  };
+
+  if (loading) {
+    return (
+      <div className="pacientes-medico-container">
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <p>Carregando pacientes...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pacientes-medico-container">
-      <div className="pacientes-header">
+      {/* Header */}
+      <header className="admin-header">
         <div className="header-content">
           <div className="header-title">
             <h1>👥 Meus Pacientes</h1>
             <p>Gerencie o histórico e informações dos seus pacientes</p>
           </div>
-          <button 
-            className="btn btn-outline"
-            onClick={() => navigate('/dashboard-medico')}
-          >
-            ← Voltar ao Dashboard
-          </button>
-        </div>
-      </div>
-
-      <div className="pacientes-content">
-        {/* Filtro e Estatísticas */}
-        <div className="controles-section">
-          <div className="search-box">
-            <input
-              type="text"
-              placeholder="🔍 Buscar paciente por nome..."
-              value={filtroNome}
-              onChange={(e) => setFiltroNome(e.target.value)}
-            />
+          <div className="header-actions">
+            <button 
+              className="btn btn-outline"
+              onClick={() => navigate('/dashboard-medico')}
+            >
+              ← Voltar ao Dashboard
+            </button>
           </div>
-          
-          <div className="stats-cards">
-            <div className="stat-card">
-              <div className="stat-icon">👥</div>
-              <div className="stat-info">
-                <h3>{pacientes.length}</h3>
-                <p>Total de Pacientes</p>
-              </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="admin-main">
+        {/* Filtro e Estatísticas */}
+        <div className="content-section">
+          <div className="section-header">
+            <h2>🎯 Controles e Estatísticas</h2>
+          </div>
+          <div className="controls-grid">
+            <div className="search-container">
+              <input
+                type="text"
+                placeholder="🔍 Buscar paciente por nome..."
+                value={filtroNome}
+                onChange={(e) => setFiltroNome(e.target.value)}
+                className="search-input"
+              />
             </div>
             
-            <div className="stat-card">
-              <div className="stat-icon">📅</div>
-              <div className="stat-info">
-                <h3>{pacientes.filter(p => p.ultimaConsulta).length}</h3>
-                <p>Com Consultas</p>
+            <div className="stats-grid">
+              <div className="stat-card">
+                <div className="stat-icon total">👥</div>
+                <div className="stat-content">
+                  <h3>{pacientes.length}</h3>
+                  <p>Total de Pacientes</p>
+                </div>
+              </div>
+              
+              <div className="stat-card">
+                <div className="stat-icon active">📅</div>
+                <div className="stat-content">
+                  <h3>{pacientes.filter(p => p.ultimaConsulta).length}</h3>
+                  <p>Pacientes Ativos</p>
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-icon success">✅</div>
+                <div className="stat-content">
+                  <h3>{pacientes.reduce((sum, p) => sum + p.consultasRealizadas, 0)}</h3>
+                  <p>Consultas Realizadas</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {loading ? (
-          <div className="loading-spinner">
-            <div className="spinner"></div>
-            <p>Carregando pacientes...</p>
+        {/* Lista de Pacientes */}
+        <div className="content-section">
+          <div className="section-header">
+            <h2>📋 Lista de Pacientes</h2>
+            <span className="section-badge">{pacientesFiltrados.length}</span>
           </div>
-        ) : (
-          <div className="pacientes-grid">
-            {pacientesFiltrados.length > 0 ? (
-              pacientesFiltrados.map(paciente => (
-                <div key={paciente._id} className="paciente-card">
+
+          {pacientesFiltrados.length > 0 ? (
+            <div className="cards-grid">
+              {pacientesFiltrados.map(paciente => (
+                <div key={paciente._id} className="card paciente-card">
                   <div className="card-header">
-                    <div className="paciente-avatar">
-                      {paciente.nome.charAt(0).toUpperCase()}
+                    <div className="user-info">
+                      <div className="user-avatar">
+                        {paciente.nome.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="user-details">
+                        <h3 className="user-name">{paciente.nome}</h3>
+                        <p className="user-email">{paciente.email}</p>
+                        {paciente.telefone && (
+                          <p className="user-phone">📞 {paciente.telefone}</p>
+                        )}
+                      </div>
                     </div>
-                    <div className="paciente-info">
-                      <h3>{paciente.nome}</h3>
-                      <p>{paciente.email}</p>
-                      {paciente.telefone && <p>📞 {paciente.telefone}</p>}
+                    <div className="performance-badge" style={{ 
+                      backgroundColor: getPerformanceColor(paciente.taxaComparecimento),
+                      color: 'white'
+                    }}>
+                      {paciente.taxaComparecimento}%
                     </div>
                   </div>
                   
-                  <div className="card-stats">
-                    <div className="stat-item">
-                      <span className="stat-label">Total Consultas:</span>
-                      <span className="stat-value">{paciente.totalConsultas}</span>
-                    </div>
-                    
-                    {paciente.ultimaConsulta && (
-                      <div className="stat-item">
-                        <span className="stat-label">Última Consulta:</span>
-                        <span className="stat-value">
-                          {formatarData(paciente.ultimaConsulta.data)}
-                        </span>
+                  <div className="card-content">
+                    <div className="info-grid">
+                      <div className="info-item">
+                        <span className="info-label">📊 Total Consultas</span>
+                        <span className="info-value">{paciente.totalConsultas}</span>
                       </div>
-                    )}
+                      
+                      <div className="info-item">
+                        <span className="info-label">✅ Realizadas</span>
+                        <span className="info-value success">{paciente.consultasRealizadas}</span>
+                      </div>
+
+                      <div className="info-item">
+                        <span className="info-label">❌ Canceladas</span>
+                        <span className="info-value danger">{paciente.consultasCanceladas}</span>
+                      </div>
+                      
+                      {paciente.ultimaConsulta && (
+                        <div className="info-item">
+                          <span className="info-label">📅 Última Consulta</span>
+                          <span className="info-value">
+                            {formatarData(paciente.ultimaConsulta.data)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="card-actions">
                     <button 
-                      className="btn btn-primary"
+                      className="btn btn-icon"
                       onClick={() => handleVerHistorico(paciente)}
+                      title="Ver Histórico Completo"
                     >
-                      📋 Histórico
+                      📋
                     </button>
                     
                     <button 
-                      className="btn btn-secondary"
+                      className="btn btn-icon success"
                       onClick={() => handleEnviarMensagem(paciente)}
+                      title="Enviar Mensagem"
                     >
-                      ✉️ Mensagem
+                      ✉️
                     </button>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="empty-state">
-                <div className="empty-icon">👥</div>
-                <h3>Nenhum paciente encontrado</h3>
-                <p>
-                  {filtroNome 
-                    ? 'Nenhum paciente corresponde à busca' 
-                    : 'Você ainda não tem pacientes cadastrados'
-                  }
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-icon">👥</div>
+              <h3>Nenhum paciente encontrado</h3>
+              <p>
+                {filtroNome 
+                  ? 'Nenhum paciente corresponde à busca' 
+                  : 'Você ainda não tem pacientes cadastrados'
+                }
+              </p>
+              <button 
+                className="btn btn-outline"
+                onClick={() => setFiltroNome('')}
+              >
+                🔄 Limpar Filtro
+              </button>
+            </div>
+          )}
+        </div>
+      </main>
 
       {/* Modal de Histórico */}
       {showModal && pacienteSelecionado && (
@@ -218,29 +291,44 @@ const PacientesMedico = () => {
             </div>
             
             <div className="modal-body">
-              <div className="paciente-info-modal">
-                <div className="info-item">
-                  <label>Email:</label>
-                  <span>{pacienteSelecionado.email}</span>
-                </div>
-                {pacienteSelecionado.telefone && (
-                  <div className="info-item">
-                    <label>Telefone:</label>
-                    <span>{pacienteSelecionado.telefone}</span>
+              <div className="paciente-info-detailed">
+                <div className="info-grid-detailed">
+                  <div className="info-item-detailed">
+                    <label>👤 Nome:</label>
+                    <span>{pacienteSelecionado.nome}</span>
                   </div>
-                )}
-                <div className="info-item">
-                  <label>Total de Consultas:</label>
-                  <span>{historicoPaciente.length}</span>
+                  <div className="info-item-detailed">
+                    <label>📧 Email:</label>
+                    <span>{pacienteSelecionado.email}</span>
+                  </div>
+                  {pacienteSelecionado.telefone && (
+                    <div className="info-item-detailed">
+                      <label>📞 Telefone:</label>
+                      <span>{pacienteSelecionado.telefone}</span>
+                    </div>
+                  )}
+                  <div className="info-item-detailed">
+                    <label>📊 Total de Consultas:</label>
+                    <span className="stat-highlight">{historicoPaciente.length}</span>
+                  </div>
+                  <div className="info-item-detailed">
+                    <label>✅ Taxa de Comparecimento:</label>
+                    <span 
+                      className="performance-text"
+                      style={{ color: getPerformanceColor(pacienteSelecionado.taxaComparecimento) }}
+                    >
+                      {pacienteSelecionado.taxaComparecimento}%
+                    </span>
+                  </div>
                 </div>
               </div>
               
-              <div className="historico-list">
-                <h4>Consultas Realizadas</h4>
+              <div className="historico-section">
+                <h4>📅 Histórico de Consultas</h4>
                 
                 {historicoPaciente.length > 0 ? (
-                  <div className="consultas-table">
-                    <table>
+                  <div className="table-container">
+                    <table className="data-table">
                       <thead>
                         <tr>
                           <th>Data</th>
@@ -256,20 +344,24 @@ const PacientesMedico = () => {
                             <td>{formatarData(consulta.data)}</td>
                             <td>{consulta.horario}</td>
                             <td>
-                              {consulta.tipoConsulta === 'telemedicina' ? 'Telemedicina' : 'Presencial'}
+                              <span className="tipo-badge">
+                                {consulta.tipoConsulta === 'telemedicina' ? '📱 Telemedicina' : '🏥 Presencial'}
+                              </span>
                             </td>
                             <td>
                               <span 
                                 className="status-badge"
                                 style={{ backgroundColor: getStatusColor(consulta.status) }}
                               >
-                                {consulta.status}
+                                {consulta.status === 'agendado' ? 'Agendado' : 
+                                 consulta.status === 'realizado' ? 'Realizado' : 
+                                 consulta.status === 'cancelado' ? 'Cancelado' : consulta.status}
                               </span>
                             </td>
                             <td>
                               {consulta.observacoes ? (
-                                <span className="observacoes-preview">
-                                  {consulta.observacoes.substring(0, 50)}...
+                                <span className="observacoes-text" title={consulta.observacoes}>
+                                  {consulta.observacoes.substring(0, 30)}...
                                 </span>
                               ) : (
                                 <span className="no-observations">-</span>
@@ -281,7 +373,7 @@ const PacientesMedico = () => {
                     </table>
                   </div>
                 ) : (
-                  <div className="empty-state">
+                  <div className="empty-state small">
                     <div className="empty-icon">📋</div>
                     <p>Nenhuma consulta registrada para este paciente</p>
                   </div>

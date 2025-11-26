@@ -1,137 +1,494 @@
-/* PacientesMedico.css - Estilos similares para consistência */
+/* PacientesMedico.css - Seguindo o padrão do AdminDashboard */
+
+/* Container principal usando as mesmas variáveis */
 .pacientes-medico-container {
   min-height: 100vh;
-  background: #f8fafc;
-  padding-bottom: 20px;
+  background: var(--background);
 }
 
-.pacientes-header {
-  background: white;
-  border-bottom: 1px solid #e2e8f0;
-  padding: 1.5rem 2rem;
+/* Controls Grid */
+.controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+  align-items: start;
 }
 
-.pacientes-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
+.search-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.controles-section {
+.search-input {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  background: var(--surface);
+  transition: border-color 0.2s ease;
+  width: 100%;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.search-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* Stats Grid - Versão Pacientes */
+.pacientes-medico-container .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.pacientes-medico-container .stat-card {
+  background: var(--surface);
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pacientes-medico-container .stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.pacientes-medico-container .stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.pacientes-medico-container .stat-icon.total { 
+  background: #e0e7ff; 
+  color: var(--primary);
+}
+.pacientes-medico-container .stat-icon.active { 
+  background: #fef3c7; 
+  color: #f59e0b;
+}
+.pacientes-medico-container .stat-icon.success { 
+  background: #dcfce7; 
+  color: #10b981;
+}
+
+.pacientes-medico-container .stat-content h3 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  color: var(--text-primary);
+}
+
+.pacientes-medico-container .stat-content p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Paciente Cards */
+.pacientes-medico-container .paciente-card {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pacientes-medico-container .paciente-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary);
+}
+
+.pacientes-medico-container .paciente-card .card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  gap: 2rem;
-}
-
-.search-box input {
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  width: 300px;
-}
-
-.stats-cards {
-  display: flex;
-  gap: 1rem;
-}
-
-.stat-card {
-  background: white;
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.stat-icon {
-  font-size: 1.5rem;
-}
-
-.stat-info h3 {
+  align-items: flex-start;
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e293b;
 }
 
-.stat-info p {
-  margin: 0;
-  color: #64748b;
-  font-size: 0.875rem;
-}
-
-.pacientes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
-}
-
-.paciente-card {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.card-header {
+.pacientes-medico-container .paciente-card .user-info {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
-  margin-bottom: 1rem;
+  flex: 1;
 }
 
-.paciente-avatar {
+.pacientes-medico-container .user-avatar {
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: var(--primary);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
   font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
-.paciente-info h3 {
-  margin: 0 0 0.25rem 0;
+.pacientes-medico-container .user-details {
+  flex: 1;
+}
+
+.pacientes-medico-container .user-name {
   font-size: 1.125rem;
   font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem 0;
 }
 
-.paciente-info p {
-  margin: 0;
-  color: #64748b;
+.pacientes-medico-container .user-email {
   font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0 0 0.25rem 0;
 }
 
-.card-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+.pacientes-medico-container .user-phone {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  margin: 0;
 }
 
-.stat-item {
+/* Performance Badge */
+.performance-badge {
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+/* Card Content */
+.pacientes-medico-container .paciente-card .card-content {
+  margin: 0;
+}
+
+.pacientes-medico-container .info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.pacientes-medico-container .info-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-light);
 }
 
-.stat-label {
-  color: #64748b;
-  font-size: 0.875rem;
+.pacientes-medico-container .info-item:last-child {
+  border-bottom: none;
 }
 
-.stat-value {
-  color: #1e293b;
+.pacientes-medico-container .info-label {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.pacientes-medico-container .info-value {
+  color: var(--text-primary);
+  font-size: 0.8rem;
   font-weight: 600;
+  text-align: right;
+}
+
+.pacientes-medico-container .info-value.success {
+  color: #10b981;
+}
+
+.pacientes-medico-container .info-value.danger {
+  color: #ef4444;
+}
+
+.pacientes-medico-container .paciente-card .card-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin: 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-light);
+}
+
+/* Modal Styles - Versão Pacientes */
+.paciente-info-detailed {
+  background: var(--background);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border-light);
+}
+
+.info-grid-detailed {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.info-item-detailed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.info-item-detailed label {
+  font-weight: 600;
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
+.info-item-detailed span {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.stat-highlight {
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+  color: var(--primary) !important;
+}
+
+.performance-text {
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+}
+
+.historico-section {
+  margin-top: 1.5rem;
+}
+
+.historico-section h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Tipo Badge */
+.tipo-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--background);
+  color: var(--text-secondary);
+}
+
+/* Observações Text */
+.observacoes-text {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.no-observations {
+  color: var(--text-tertiary);
+  font-style: italic;
+  font-size: 0.8rem;
+}
+
+/* Status Badges */
+.pacientes-medico-container .status-badge {
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Section Badge */
+.section-badge {
+  background: var(--primary);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Empty States */
+.pacientes-medico-container .empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text-secondary);
+}
+
+.pacientes-medico-container .empty-state.small {
+  padding: 2rem;
+}
+
+.pacientes-medico-container .empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.pacientes-medico-container .empty-state.small .empty-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.pacientes-medico-container .empty-state h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pacientes-medico-container .empty-state p {
+  margin: 0 0 1.5rem 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.pacientes-medico-container .empty-state.small p {
+  margin: 0;
+}
+
+/* Loading States */
+.pacientes-medico-container .loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  gap: 1rem;
+}
+
+.pacientes-medico-container .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.pacientes-medico-container .loading-overlay p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .controls-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .pacientes-medico-container .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .pacientes-medico-container .stat-card {
+    padding: 1rem;
+  }
+  
+  .pacientes-medico-container .stat-content h3 {
+    font-size: 1.5rem;
+  }
+  
+  .info-grid-detailed {
+    grid-template-columns: 1fr;
+  }
+  
+  .pacientes-medico-container .paciente-card .card-header {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+  
+  .pacientes-medico-container .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pacientes-medico-container .paciente-card .card-actions {
+    justify-content: center;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .section-badge {
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .pacientes-medico-container .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pacientes-medico-container .cards-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pacientes-medico-container .paciente-card .user-info {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.75rem;
+  }
+  
+  .pacientes-medico-container .user-details {
+    text-align: center;
+  }
+}
+
+/* Cards Grid específico para pacientes */
+.pacientes-medico-container .cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Table Container para modal */
+.table-container {
+  overflow-x: auto;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+}
+
+/* Hover effects melhorados */
+.pacientes-medico-container .paciente-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pacientes-medico-container .paciente-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}

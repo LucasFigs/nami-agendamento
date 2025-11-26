@@ -519,3 +519,61 @@ exports.criarMedicoCompleto = async (req, res) => {
         });
     }
 };
+
+// @desc    Atualizar próprio perfil do médico
+// @route   PUT /api/medicos/meu-perfil
+// @access  Private (Médico)
+exports.atualizarMeuPerfil = async (req, res) => {
+    try {
+        const usuarioId = req.usuario.id;
+        const { especialidade, consultorio, diasAtendimento } = req.body;
+
+        console.log('🔄 Médico atualizando próprio perfil:', usuarioId);
+        console.log('📝 Dados recebidos:', { especialidade, consultorio, diasAtendimento });
+
+        // Buscar médico pelo ID do usuário logado
+        const medico = await Medico.findOne({ usuario: usuarioId });
+
+        if (!medico) {
+            return res.status(404).json({
+                success: false,
+                message: 'Médico não encontrado'
+            });
+        }
+
+        // Verificar se o médico está tentando editar seu próprio perfil
+        if (medico.usuario.toString() !== usuarioId) {
+            return res.status(403).json({
+                success: false,
+                message: 'Acesso negado. Você só pode editar seu próprio perfil.'
+            });
+        }
+
+        // Atualizar campos permitidos
+        if (especialidade) medico.especialidade = especialidade;
+        if (consultorio) medico.consultorio = consultorio;
+        if (diasAtendimento) medico.diasAtendimento = diasAtendimento;
+
+        await medico.save();
+
+        // Buscar médico atualizado com dados do usuário
+        const medicoAtualizado = await Medico.findById(medico._id)
+            .populate('usuario', 'nome email telefone');
+
+        console.log('✅ Perfil do médico atualizado com sucesso');
+
+        res.json({
+            success: true,
+            message: 'Perfil atualizado com sucesso',
+            data: medicoAtualizado
+        });
+
+    } catch (error) {
+        console.error('❌ Erro ao atualizar perfil do médico:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao atualizar perfil',
+            error: error.message
+        });
+    }
+};
