@@ -1,0 +1,12 @@
+{
+  "name": "nami-agendamento",
+  "version": "1.0.0",
+  "description": "Sistema de agendamento médico NAMI",
+  "engines": {
+    "node": "18.20.4"
+  },
+  "scripts": {
+    "build": "cd server && npm install",
+    "start": "cd server && node server.js"
+  }
+}
