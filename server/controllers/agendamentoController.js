@@ -693,3 +693,163 @@ exports.getEstatisticasStatus = async (req, res) => {
         });
     }
 };
+
+// @desc    Buscar agendamentos do médico logado
+// @route   GET /api/agendamentos/medico/meus-agendamentos
+// @access  Private (Médico)
+exports.getMeusAgendamentos = async (req, res) => {
+  try {
+    const usuarioId = req.usuario.id;
+    
+    console.log('Buscando agendamentos para médico:', usuarioId);
+
+    // Primeiro, buscar o médico pelo usuário ID
+    const Medico = require('../models/Medico');
+    const medico = await Medico.findOne({ usuario: usuarioId });
+    
+    if (!medico) {
+      return res.status(404).json({
+        success: false,
+        message: 'Médico não encontrado'
+      });
+    }
+
+    console.log('Médico encontrado:', medico._id);
+
+    // Buscar agendamentos deste médico
+    const Agendamento = require('../models/Agendamento');
+    const agendamentos = await Agendamento.find({
+      medico: medico._id
+    })
+    .populate('paciente', 'nome email telefone')
+    .populate('medico', 'usuario especialidade')
+    .sort({ data: 1, horario: 1 });
+
+    console.log('Agendamentos encontrados:', agendamentos.length);
+
+    res.json({
+      success: true,
+      count: agendamentos.length,
+      data: agendamentos
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar agendamentos do médico:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar agendamentos',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Adicionar observações a um agendamento
+// @route   PUT /api/agendamentos/:id/observacoes
+// @access  Private (Médico)
+exports.adicionarObservacoes = async (req, res) => {
+  try {
+    const { observacoes } = req.body;
+    const agendamentoId = req.params.id;
+
+    // Verificar se o agendamento existe
+    const Agendamento = require('../models/Agendamento');
+    let agendamento = await Agendamento.findById(agendamentoId);
+
+    if (!agendamento) {
+      return res.status(404).json({
+        success: false,
+        message: 'Agendamento não encontrado'
+      });
+    }
+
+    // Verificar se o médico logado é o médico do agendamento
+    const Medico = require('../models/Medico');
+    const usuarioId = req.usuario.id;
+    const medico = await Medico.findOne({ usuario: usuarioId });
+
+    if (!medico || agendamento.medico.toString() !== medico._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Acesso negado. Este agendamento não pertence a você.'
+      });
+    }
+
+    // Atualizar observações
+    agendamento.observacoes = observacoes;
+    await agendamento.save();
+
+    // Recarregar com populate
+    agendamento = await Agendamento.findById(agendamentoId)
+      .populate('paciente', 'nome email telefone')
+      .populate('medico', 'usuario especialidade');
+
+    res.json({
+      success: true,
+      message: 'Observações adicionadas com sucesso',
+      data: agendamento
+    });
+
+  } catch (error) {
+    console.error('Erro ao adicionar observações:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao adicionar observações',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Marcar agendamento como realizado
+// @route   PUT /api/agendamentos/:id/realizado
+// @access  Private (Médico)
+exports.marcarComoRealizado = async (req, res) => {
+  try {
+    const agendamentoId = req.params.id;
+
+    // Verificar se o agendamento existe
+    const Agendamento = require('../models/Agendamento');
+    let agendamento = await Agendamento.findById(agendamentoId);
+
+    if (!agendamento) {
+      return res.status(404).json({
+        success: false,
+        message: 'Agendamento não encontrado'
+      });
+    }
+
+    // Verificar se o médico logado é o médico do agendamento
+    const Medico = require('../models/Medico');
+    const usuarioId = req.usuario.id;
+    const medico = await Medico.findOne({ usuario: usuarioId });
+
+    if (!medico || agendamento.medico.toString() !== medico._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Acesso negado. Este agendamento não pertence a você.'
+      });
+    }
+
+    // Atualizar status
+    agendamento.status = 'realizado';
+    await agendamento.save();
+
+    // Recarregar com populate
+    agendamento = await Agendamento.findById(agendamentoId)
+      .populate('paciente', 'nome email telefone')
+      .populate('medico', 'usuario especialidade');
+
+    res.json({
+      success: true,
+      message: 'Agendamento marcado como realizado',
+      data: agendamento
+    });
+
+  } catch (error) {
+    console.error('Erro ao marcar como realizado:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao marcar agendamento como realizado',
+      error: error.message
+    });
+  }
+};

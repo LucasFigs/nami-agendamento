@@ -552,251 +552,251 @@ const AdminDashboard = () => {
   };
 
   // Novas funções para gráficos melhorados (adicionar antes do return)
-const calculateStatusDistribution = (consultasPorMes) => {
-  if (!consultasPorMes || consultasPorMes.length === 0) return [];
-  
-  let realizadas = 0;
-  let canceladas = 0;
-  let agendadas = 0;
+  const calculateStatusDistribution = (consultasPorMes) => {
+    if (!consultasPorMes || consultasPorMes.length === 0) return [];
 
-  consultasPorMes.forEach(item => {
-    realizadas += Number(item.realizadas) || 0;
-    canceladas += Number(item.canceladas) || 0;
-    agendadas += (Number(item.total) || 0) - realizadas - canceladas;
-  });
+    let realizadas = 0;
+    let canceladas = 0;
+    let agendadas = 0;
 
-  const dados = [];
-  if (realizadas > 0) dados.push({ label: 'Realizadas', value: realizadas, color: '#10b981' });
-  if (agendadas > 0) dados.push({ label: 'Agendadas', value: agendadas, color: '#3b82f6' });
-  if (canceladas > 0) dados.push({ label: 'Canceladas', value: canceladas, color: '#ef4444' });
+    consultasPorMes.forEach(item => {
+      realizadas += Number(item.realizadas) || 0;
+      canceladas += Number(item.canceladas) || 0;
+      agendadas += (Number(item.total) || 0) - realizadas - canceladas;
+    });
 
-  return dados;
-};
+    const dados = [];
+    if (realizadas > 0) dados.push({ label: 'Realizadas', value: realizadas, color: '#10b981' });
+    if (agendadas > 0) dados.push({ label: 'Agendadas', value: agendadas, color: '#3b82f6' });
+    if (canceladas > 0) dados.push({ label: 'Canceladas', value: canceladas, color: '#ef4444' });
 
-const renderEnhancedBarChart = (data, title) => {
-  if (!data || data.length === 0) {
+    return dados;
+  };
+
+  const renderEnhancedBarChart = (data, title) => {
+    if (!data || data.length === 0) {
+      return (
+        <div className="empty-chart">
+          <div className="empty-chart-icon">📊</div>
+          <p>Nenhum dado disponível</p>
+        </div>
+      );
+    }
+
+    const maxValue = Math.max(...data.map(item => item.total || 0));
+
     return (
-      <div className="empty-chart">
-        <div className="empty-chart-icon">📊</div>
-        <p>Nenhum dado disponível</p>
-      </div>
-    );
-  }
-
-  const maxValue = Math.max(...data.map(item => item.total || 0));
-
-  return (
-    <div className="enhanced-bar-chart">
-      <div className="chart-bars-vertical">
-        {data.map((item, index) => {
-          const percentage = ((item.total || 0) / maxValue) * 100;
-          return (
-            <div key={index} className="bar-vertical-item">
-              <div className="bar-vertical-container">
-                <div
-                  className="bar-vertical-fill"
-                  style={{ height: `${percentage}%` }}
-                >
-                  <div className="bar-value">{item.total || 0}</div>
+      <div className="enhanced-bar-chart">
+        <div className="chart-bars-vertical">
+          {data.map((item, index) => {
+            const percentage = ((item.total || 0) / maxValue) * 100;
+            return (
+              <div key={index} className="bar-vertical-item">
+                <div className="bar-vertical-container">
+                  <div
+                    className="bar-vertical-fill"
+                    style={{ height: `${percentage}%` }}
+                  >
+                    <div className="bar-value">{item.total || 0}</div>
+                  </div>
+                </div>
+                <div className="bar-label">{item.label}</div>
+                <div className="bar-details">
+                  <span className="detail-success">✓{item.realizadas || 0}</span>
+                  <span className="detail-danger">✗{item.canceladas || 0}</span>
                 </div>
               </div>
-              <div className="bar-label">{item.label}</div>
-              <div className="bar-details">
-                <span className="detail-success">✓{item.realizadas || 0}</span>
-                <span className="detail-danger">✗{item.canceladas || 0}</span>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderEnhancedPieChart = (data, title) => {
+    if (!data || data.length === 0) {
+      return (
+        <div className="empty-chart">
+          <div className="empty-chart-icon">📈</div>
+          <p>Nenhum dado disponível</p>
+        </div>
+      );
+    }
+
+    const total = data.reduce((sum, item) => sum + (item.value || 0), 0);
+
+    if (total === 0) {
+      return (
+        <div className="empty-chart">
+          <div className="empty-chart-icon">📈</div>
+          <p>Dados insuficientes</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="enhanced-pie-chart">
+        <div className="pie-visual">
+          <div className="pie-chart-svg">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              {data.map((item, index, array) => {
+                const percentage = (item.value / total) * 100;
+                const offset = array.slice(0, index).reduce((sum, i) => sum + (i.value / total) * 360, 0);
+                const angle = (item.value / total) * 360;
+
+                const startAngle = offset - 90;
+                const endAngle = startAngle + angle;
+
+                const startRad = (startAngle * Math.PI) / 180;
+                const endRad = (endAngle * Math.PI) / 180;
+
+                const x1 = 60 + 50 * Math.cos(startRad);
+                const y1 = 60 + 50 * Math.sin(startRad);
+                const x2 = 60 + 50 * Math.cos(endRad);
+                const y2 = 60 + 50 * Math.sin(endRad);
+
+                const largeArcFlag = angle > 180 ? 1 : 0;
+
+                const pathData = [
+                  `M 60 60`,
+                  `L ${x1} ${y1}`,
+                  `A 50 50 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                  'Z'
+                ].join(' ');
+
+                return (
+                  <path
+                    key={index}
+                    d={pathData}
+                    fill={item.color || getChartColor(index)}
+                    stroke="#fff"
+                    strokeWidth="2"
+                  />
+                );
+              })}
+            </svg>
+          </div>
+          <div className="pie-center">
+            <div className="pie-total">{total}</div>
+            <div className="pie-label">Total</div>
+          </div>
+        </div>
+        <div className="pie-legend-enhanced">
+          {data.map((item, index) => {
+            const percentage = ((item.value || 0) / total) * 100;
+            return (
+              <div key={index} className="legend-item-enhanced">
+                <div className="legend-color" style={{ backgroundColor: item.color || getChartColor(index) }}></div>
+                <div className="legend-info">
+                  <div className="legend-label">{item.label}</div>
+                  <div className="legend-value">{item.value} ({Math.round(percentage)}%)</div>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-const renderEnhancedPieChart = (data, title) => {
-  if (!data || data.length === 0) {
-    return (
-      <div className="empty-chart">
-        <div className="empty-chart-icon">📈</div>
-        <p>Nenhum dado disponível</p>
-      </div>
-    );
-  }
-
-  const total = data.reduce((sum, item) => sum + (item.value || 0), 0);
-  
-  if (total === 0) {
-    return (
-      <div className="empty-chart">
-        <div className="empty-chart-icon">📈</div>
-        <p>Dados insuficientes</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="enhanced-pie-chart">
-      <div className="pie-visual">
-        <div className="pie-chart-svg">
-          <svg width="120" height="120" viewBox="0 0 120 120">
-            {data.map((item, index, array) => {
-              const percentage = (item.value / total) * 100;
-              const offset = array.slice(0, index).reduce((sum, i) => sum + (i.value / total) * 360, 0);
-              const angle = (item.value / total) * 360;
-              
-              const startAngle = offset - 90;
-              const endAngle = startAngle + angle;
-              
-              const startRad = (startAngle * Math.PI) / 180;
-              const endRad = (endAngle * Math.PI) / 180;
-              
-              const x1 = 60 + 50 * Math.cos(startRad);
-              const y1 = 60 + 50 * Math.sin(startRad);
-              const x2 = 60 + 50 * Math.cos(endRad);
-              const y2 = 60 + 50 * Math.sin(endRad);
-              
-              const largeArcFlag = angle > 180 ? 1 : 0;
-              
-              const pathData = [
-                `M 60 60`,
-                `L ${x1} ${y1}`,
-                `A 50 50 0 ${largeArcFlag} 1 ${x2} ${y2}`,
-                'Z'
-              ].join(' ');
-              
-              return (
-                <path
-                  key={index}
-                  d={pathData}
-                  fill={item.color || getChartColor(index)}
-                  stroke="#fff"
-                  strokeWidth="2"
-                />
-              );
-            })}
-          </svg>
-        </div>
-        <div className="pie-center">
-          <div className="pie-total">{total}</div>
-          <div className="pie-label">Total</div>
+            );
+          })}
         </div>
       </div>
-      <div className="pie-legend-enhanced">
-        {data.map((item, index) => {
-          const percentage = ((item.value || 0) / total) * 100;
+    );
+  };
+
+  const renderDoctorsChart = (data, title) => {
+    if (!data || data.length === 0) {
+      return (
+        <div className="empty-chart">
+          <div className="empty-chart-icon">👨‍⚕️</div>
+          <p>Nenhum médico com consultas</p>
+        </div>
+      );
+    }
+
+    const maxConsultas = Math.max(...data.map(item => item.totalConsultas || 0));
+
+    return (
+      <div className="doctors-chart">
+        {data.map((medico, index) => {
+          const percentage = ((medico.totalConsultas || 0) / maxConsultas) * 100;
           return (
-            <div key={index} className="legend-item-enhanced">
-              <div className="legend-color" style={{ backgroundColor: item.color || getChartColor(index) }}></div>
-              <div className="legend-info">
-                <div className="legend-label">{item.label}</div>
-                <div className="legend-value">{item.value} ({Math.round(percentage)}%)</div>
+            <div key={index} className="doctor-bar">
+              <div className="doctor-info-compact">
+                <span className="doctor-name">{medico.medico?.split(' ')[0] || 'Médico'}</span>
+                <span className="doctor-specialty">{medico.especialidade}</span>
+              </div>
+              <div className="doctor-bar-container">
+                <div
+                  className="doctor-bar-fill"
+                  style={{ width: `${percentage}%` }}
+                ></div>
+                <span className="doctor-bar-value">{medico.totalConsultas || 0}</span>
               </div>
             </div>
           );
         })}
       </div>
-    </div>
-  );
-};
-
-const renderDoctorsChart = (data, title) => {
-  if (!data || data.length === 0) {
-    return (
-      <div className="empty-chart">
-        <div className="empty-chart-icon">👨‍⚕️</div>
-        <p>Nenhum médico com consultas</p>
-      </div>
     );
-  }
+  };
 
-  const maxConsultas = Math.max(...data.map(item => item.totalConsultas || 0));
-
-  return (
-    <div className="doctors-chart">
-      {data.map((medico, index) => {
-        const percentage = ((medico.totalConsultas || 0) / maxConsultas) * 100;
-        return (
-          <div key={index} className="doctor-bar">
-            <div className="doctor-info-compact">
-              <span className="doctor-name">{medico.medico?.split(' ')[0] || 'Médico'}</span>
-              <span className="doctor-specialty">{medico.especialidade}</span>
-            </div>
-            <div className="doctor-bar-container">
-              <div
-                className="doctor-bar-fill"
-                style={{ width: `${percentage}%` }}
-              ></div>
-              <span className="doctor-bar-value">{medico.totalConsultas || 0}</span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-const renderTimeChart = (data, title) => {
-  if (!data || data.length === 0) {
-    return (
-      <div className="empty-chart">
-        <div className="empty-chart-icon">⏰</div>
-        <p>Sem dados de horários</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="time-chart">
-      {data.slice(0, 8).map((item, index) => (
-        <div key={index} className="time-item">
-          <span className="time-label">{item._id}</span>
-          <div className="time-bar-container">
-            <div
-              className="time-bar-fill"
-              style={{ width: `${(item.total / Math.max(...data.map(d => d.total))) * 100}%` }}
-            ></div>
-            <span className="time-value">{item.total}</span>
-          </div>
+  const renderTimeChart = (data, title) => {
+    if (!data || data.length === 0) {
+      return (
+        <div className="empty-chart">
+          <div className="empty-chart-icon">⏰</div>
+          <p>Sem dados de horários</p>
         </div>
-      ))}
-    </div>
-  );
-};
+      );
+    }
 
-// Funções utilitárias para estatísticas
-const calculateTotalConsultas = (consultasPorMes) => {
-  if (!consultasPorMes) return 0;
-  return consultasPorMes.reduce((sum, item) => sum + (item.total || 0), 0);
-};
+    return (
+      <div className="time-chart">
+        {data.slice(0, 8).map((item, index) => (
+          <div key={index} className="time-item">
+            <span className="time-label">{item._id}</span>
+            <div className="time-bar-container">
+              <div
+                className="time-bar-fill"
+                style={{ width: `${(item.total / Math.max(...data.map(d => d.total))) * 100}%` }}
+              ></div>
+              <span className="time-value">{item.total}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
-const calculateTaxaComparecimento = (consultasPorMes) => {
-  if (!consultasPorMes || consultasPorMes.length === 0) return 0;
-  const total = calculateTotalConsultas(consultasPorMes);
-  const realizadas = consultasPorMes.reduce((sum, item) => sum + (item.realizadas || 0), 0);
-  return total > 0 ? Math.round((realizadas / total) * 100) : 0;
-};
+  // Funções utilitárias para estatísticas
+  const calculateTotalConsultas = (consultasPorMes) => {
+    if (!consultasPorMes) return 0;
+    return consultasPorMes.reduce((sum, item) => sum + (item.total || 0), 0);
+  };
 
-const calculateTaxaCancelamento = (consultasPorMes) => {
-  if (!consultasPorMes || consultasPorMes.length === 0) return 0;
-  const total = calculateTotalConsultas(consultasPorMes);
-  const canceladas = consultasPorMes.reduce((sum, item) => sum + (item.canceladas || 0), 0);
-  return total > 0 ? Math.round((canceladas / total) * 100) : 0;
-};
+  const calculateTaxaComparecimento = (consultasPorMes) => {
+    if (!consultasPorMes || consultasPorMes.length === 0) return 0;
+    const total = calculateTotalConsultas(consultasPorMes);
+    const realizadas = consultasPorMes.reduce((sum, item) => sum + (item.realizadas || 0), 0);
+    return total > 0 ? Math.round((realizadas / total) * 100) : 0;
+  };
 
-const findHorarioMaisPopular = (horariosPopulares) => {
-  if (!horariosPopulares || horariosPopulares.length === 0) return 'N/A';
-  const maisPopular = horariosPopulares.reduce((prev, current) => 
-    (prev.total > current.total) ? prev : current
-  );
-  return maisPopular._id;
-};
+  const calculateTaxaCancelamento = (consultasPorMes) => {
+    if (!consultasPorMes || consultasPorMes.length === 0) return 0;
+    const total = calculateTotalConsultas(consultasPorMes);
+    const canceladas = consultasPorMes.reduce((sum, item) => sum + (item.canceladas || 0), 0);
+    return total > 0 ? Math.round((canceladas / total) * 100) : 0;
+  };
 
-const getPerformanceLabel = (taxa) => {
-  if (taxa >= 80) return 'Excelente';
-  if (taxa >= 60) return 'Boa';
-  if (taxa >= 40) return 'Média';
-  return 'Baixa';
-};
+  const findHorarioMaisPopular = (horariosPopulares) => {
+    if (!horariosPopulares || horariosPopulares.length === 0) return 'N/A';
+    const maisPopular = horariosPopulares.reduce((prev, current) =>
+      (prev.total > current.total) ? prev : current
+    );
+    return maisPopular._id;
+  };
+
+  const getPerformanceLabel = (taxa) => {
+    if (taxa >= 80) return 'Excelente';
+    if (taxa >= 60) return 'Boa';
+    if (taxa >= 40) return 'Média';
+    return 'Baixa';
+  };
 
   return (
     <div className="admin-container">
@@ -808,8 +808,14 @@ const getPerformanceLabel = (taxa) => {
             <p>Gerencie usuários, médicos e consultas do sistema</p>
           </div>
           <div className="header-actions">
-            <button className="btn btn-outline" onClick={() => navigate('/dashboard-medico')}>
-              ← Voltar ao Dashboard
+            <button
+              className="btn btn-outline"
+              onClick={() => {
+                authService.logout();
+                navigate('/login');
+              }}
+            >
+              🚪 Sair
             </button>
           </div>
         </div>
@@ -1047,7 +1053,10 @@ const getPerformanceLabel = (taxa) => {
                       </td>
                       <td>{usuario.email}</td>
                       <td>
-                        <span className="type-badge" style={{ backgroundColor: getTipoColor(usuario.tipo) }}>
+                        <span className={`tipo-badge tipo-${usuario.tipo}`}>
+                          {usuario.tipo === 'admin' && '👑 '}
+                          {usuario.tipo === 'medico' && '👨‍⚕️ '}
+                          {usuario.tipo === 'paciente' && '👤 '}
                           {usuario.tipo}
                         </span>
                       </td>
@@ -1364,8 +1373,8 @@ const getPerformanceLabel = (taxa) => {
                             </td>
                             <td>
                               <span className={`performance-badge ${(medico.taxaSucesso || 0) >= 80 ? 'excellent' :
-                                  (medico.taxaSucesso || 0) >= 60 ? 'good' :
-                                    (medico.taxaSucesso || 0) >= 40 ? 'average' : 'poor'
+                                (medico.taxaSucesso || 0) >= 60 ? 'good' :
+                                  (medico.taxaSucesso || 0) >= 40 ? 'average' : 'poor'
                                 }`}>
                                 {getPerformanceLabel(medico.taxaSucesso || 0)}
                               </span>
@@ -1433,91 +1442,141 @@ const getPerformanceLabel = (taxa) => {
             </div>
 
             <div className="modal-body">
-              {/* Modal Cadastrar Médico */}
+              {/* Modal Cadastrar Médico - VERSÃO MAIOR */}
               {modalType === 'medico' && (
                 <form onSubmit={handleCreateMedico} className="modal-form">
-                  <div className="form-grid">
-                    <div className="form-group">
-                      <label>Nome Completo *</label>
-                      <input
-                        type="text"
-                        value={formMedico.nome}
-                        onChange={(e) => setFormMedico(prev => ({ ...prev, nome: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Email *</label>
-                      <input
-                        type="email"
-                        value={formMedico.email}
-                        onChange={(e) => setFormMedico(prev => ({ ...prev, email: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Telefone</label>
-                      <input
-                        type="tel"
-                        value={formMedico.telefone}
-                        onChange={(e) => setFormMedico(prev => ({ ...prev, telefone: e.target.value }))}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Senha *</label>
-                      <input
-                        type="password"
-                        value={formMedico.senha}
-                        onChange={(e) => setFormMedico(prev => ({ ...prev, senha: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Especialidade *</label>
-                      <select
-                        value={formMedico.especialidade}
-                        onChange={(e) => setFormMedico(prev => ({ ...prev, especialidade: e.target.value }))}
-                        required
-                      >
-                        <option value="">Selecione</option>
-                        <option value="Ginecologista">Ginecologista</option>
-                        <option value="Ortopedista">Ortopedista</option>
-                        <option value="Endocrinologista">Endocrinologista</option>
-                        <option value="Geriatra">Geriatra</option>
-                        <option value="Psiquiatra">Psiquiatra</option>
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label>CRM *</label>
-                      <input
-                        type="text"
-                        value={formMedico.crm}
-                        onChange={(e) => setFormMedico(prev => ({ ...prev, crm: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Consultório</label>
-                      <input
-                        type="text"
-                        value={formMedico.consultorio}
-                        onChange={(e) => setFormMedico(prev => ({ ...prev, consultorio: e.target.value }))}
-                      />
+                  <div className="form-section">
+                    <h4>👤 Dados Pessoais</h4>
+                    <div className="form-grid">
+                      <div className="form-group">
+                        <label>Nome Completo *</label>
+                        <input
+                          type="text"
+                          value={formMedico.nome}
+                          onChange={(e) => setFormMedico(prev => ({ ...prev, nome: e.target.value }))}
+                          placeholder="Dr. João Silva"
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Email *</label>
+                        <input
+                          type="email"
+                          value={formMedico.email}
+                          onChange={(e) => setFormMedico(prev => ({ ...prev, email: e.target.value }))}
+                          placeholder="joao.silva@clinica.com"
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Telefone</label>
+                        <input
+                          type="tel"
+                          value={formMedico.telefone}
+                          onChange={(e) => setFormMedico(prev => ({ ...prev, telefone: e.target.value }))}
+                          placeholder="(11) 99999-9999"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Senha *</label>
+                        <input
+                          type="password"
+                          value={formMedico.senha}
+                          onChange={(e) => setFormMedico(prev => ({ ...prev, senha: e.target.value }))}
+                          placeholder="Mínimo 6 caracteres"
+                          required
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Editor de Horários */}
-                  <div className="horarios-section">
-                    <h4>📅 Horários de Atendimento</h4>
-                    <p className="section-description">
-                      Configure os dias e horários em que o médico atende
-                    </p>
+                  <div className="form-section">
+                    <h4>🏥 Dados Profissionais</h4>
+                    <div className="form-grid">
+                      <div className="form-group">
+                        <label>Especialidade *</label>
+                        <select
+                          value={formMedico.especialidade}
+                          onChange={(e) => setFormMedico(prev => ({ ...prev, especialidade: e.target.value }))}
+                          required
+                        >
+                          <option value="">Selecione uma especialidade</option>
+                          <option value="Ginecologista">👩‍⚕️ Ginecologista</option>
+                          <option value="Ortopedista">🦴 Ortopedista</option>
+                          <option value="Endocrinologista">⚖️ Endocrinologista</option>
+                          <option value="Geriatra">👵 Geriatra</option>
+                          <option value="Psiquiatra">🧠 Psiquiatra</option>
+                          <option value="Cardiologista">❤️ Cardiologista</option>
+                          <option value="Dermatologista">🔬 Dermatologista</option>
+                          <option value="Pediatra">👶 Pediatra</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>CRM *</label>
+                        <input
+                          type="text"
+                          value={formMedico.crm}
+                          onChange={(e) => setFormMedico(prev => ({ ...prev, crm: e.target.value }))}
+                          placeholder="CRM-SP 123456"
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Consultório</label>
+                        <input
+                          type="text"
+                          value={formMedico.consultorio}
+                          onChange={(e) => setFormMedico(prev => ({ ...prev, consultorio: e.target.value }))}
+                          placeholder="Sala 205, Ala B"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-                    <div className="dias-atendimento-grid">
+                  {/* Editor de Horários - VERSÃO MAIOR */}
+                  <div className="form-section">
+                    <div className="section-header-with-actions">
+                      <div>
+                        <h4>📅 Horários de Atendimento</h4>
+                        <p className="section-description">
+                          Configure os dias e horários em que o médico atende
+                        </p>
+                      </div>
+                      <div className="quick-actions-buttons">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline"
+                          onClick={() => {
+                            const novosDias = formMedico.diasAtendimento.map(dia => ({
+                              ...dia,
+                              horarios: ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00']
+                            }));
+                            setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
+                          }}
+                        >
+                          ⏰ Preencher Todos
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline"
+                          onClick={() => {
+                            const novosDias = formMedico.diasAtendimento.map(dia => ({
+                              ...dia,
+                              horarios: []
+                            }));
+                            setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
+                          }}
+                        >
+                          🗑️ Limpar Todos
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="dias-atendimento-grid-improved">
                       {formMedico.diasAtendimento.map((dia, index) => (
-                        <div key={dia.diaSemana} className="dia-atendimento-card">
-                          <div className="dia-header">
-                            <label className="dia-checkbox">
+                        <div key={dia.diaSemana} className={`dia-atendimento-card-improved ${dia.horarios.length > 0 ? 'active' : ''}`}>
+                          <div className="dia-header-improved">
+                            <label className="dia-checkbox-improved">
                               <input
                                 type="checkbox"
                                 checked={dia.horarios.length > 0}
@@ -1531,7 +1590,8 @@ const getPerformanceLabel = (taxa) => {
                                   setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
                                 }}
                               />
-                              <span className="dia-nome">
+                              <span className="checkmark"></span>
+                              <span className="dia-nome-improved">
                                 {dia.diaSemana === 'segunda' && 'Segunda-feira'}
                                 {dia.diaSemana === 'terca' && 'Terça-feira'}
                                 {dia.diaSemana === 'quarta' && 'Quarta-feira'}
@@ -1540,102 +1600,118 @@ const getPerformanceLabel = (taxa) => {
                                 {dia.diaSemana === 'sabado' && 'Sábado'}
                               </span>
                             </label>
+                            <span className="horarios-count">
+                              {dia.horarios.length} horários
+                            </span>
                           </div>
 
                           {dia.horarios.length > 0 && (
-                            <div className="horarios-list">
-                              <div className="horarios-header">
-                                <span>Horários</span>
+                            <div className="horarios-list-improved">
+                              <div className="horarios-header-improved">
+                                <span>Horários configurados:</span>
                                 <button
                                   type="button"
-                                  className="btn-add-horario"
+                                  className="btn-add-horario-improved"
                                   onClick={() => {
                                     const novosDias = [...formMedico.diasAtendimento];
-                                    novosDias[index].horarios.push('08:00');
+                                    novosDias[index].horarios.push('09:00');
                                     setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
                                   }}
                                 >
-                                  + Add
+                                  + Add Horário
                                 </button>
                               </div>
 
-                              {dia.horarios.map((horario, horarioIndex) => (
-                                <div key={horarioIndex} className="horario-item">
-                                  <input
-                                    type="time"
-                                    value={horario}
-                                    onChange={(e) => {
-                                      const novosDias = [...formMedico.diasAtendimento];
-                                      novosDias[index].horarios[horarioIndex] = e.target.value;
-                                      setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
-                                    }}
-                                    className="time-input"
-                                  />
-                                  <button
-                                    type="button"
-                                    className="btn-remove-horario"
-                                    onClick={() => {
-                                      const novosDias = [...formMedico.diasAtendimento];
-                                      novosDias[index].horarios.splice(horarioIndex, 1);
-                                      setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
-                                    }}
-                                  >
-                                    ×
-                                  </button>
-                                </div>
-                              ))}
+                              <div className="horarios-grid">
+                                {dia.horarios.map((horario, horarioIndex) => (
+                                  <div key={horarioIndex} className="horario-item-improved">
+                                    <input
+                                      type="time"
+                                      value={horario}
+                                      onChange={(e) => {
+                                        const novosDias = [...formMedico.diasAtendimento];
+                                        novosDias[index].horarios[horarioIndex] = e.target.value;
+                                        setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
+                                      }}
+                                      className="time-input-improved"
+                                    />
+                                    <button
+                                      type="button"
+                                      className="btn-remove-horario-improved"
+                                      onClick={() => {
+                                        const novosDias = [...formMedico.diasAtendimento];
+                                        novosDias[index].horarios.splice(horarioIndex, 1);
+                                        setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
+                                      }}
+                                      title="Remover horário"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>
                       ))}
                     </div>
 
-                    <div className="quick-horarios-actions">
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => {
-                          const novosDias = formMedico.diasAtendimento.map(dia => ({
-                            ...dia,
-                            horarios: ['08:00', '09:00', '10:00', '11:00']
-                          }));
-                          setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
-                        }}
-                      >
-                        ⏰ Horários Manhã
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => {
-                          const novosDias = formMedico.diasAtendimento.map(dia => ({
-                            ...dia,
-                            horarios: ['14:00', '15:00', '16:00', '17:00']
-                          }));
-                          setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
-                        }}
-                      >
-                        🕒 Horários Tarde
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => {
-                          const novosDias = formMedico.diasAtendimento.map(dia => ({
-                            ...dia,
-                            horarios: []
-                          }));
-                          setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
-                        }}
-                      >
-                        🗑️ Limpar Todos
-                      </button>
+                    <div className="preset-horarios">
+                      <span>Predefinições rápidas:</span>
+                      <div className="preset-buttons">
+                        <button
+                          type="button"
+                          className="btn-preset"
+                          onClick={() => {
+                            const novosDias = formMedico.diasAtendimento.map(dia => ({
+                              ...dia,
+                              horarios: ['08:00', '09:00', '10:00', '11:00']
+                            }));
+                            setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
+                          }}
+                        >
+                          ⏰ Manhã (8h-11h)
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-preset"
+                          onClick={() => {
+                            const novosDias = formMedico.diasAtendimento.map(dia => ({
+                              ...dia,
+                              horarios: ['14:00', '15:00', '16:00', '17:00']
+                            }));
+                            setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
+                          }}
+                        >
+                          🕒 Tarde (14h-17h)
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-preset"
+                          onClick={() => {
+                            const novosDias = formMedico.diasAtendimento.map(dia => ({
+                              ...dia,
+                              horarios: ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00']
+                            }));
+                            setFormMedico(prev => ({ ...prev, diasAtendimento: novosDias }));
+                          }}
+                        >
+                          🌅 Integral (8h-17h)
+                        </button>
+                      </div>
                     </div>
                   </div>
 
                   <div className="form-actions">
                     <button type="submit" className="btn btn-primary" disabled={loading}>
-                      {loading ? 'Cadastrando...' : 'Cadastrar Médico'}
+                      {loading ? (
+                        <>
+                          <div className="loading-spinner-small"></div>
+                          Cadastrando...
+                        </>
+                      ) : (
+                        '👨‍⚕️ Cadastrar Médico'
+                      )}
                     </button>
                     <button
                       type="button"

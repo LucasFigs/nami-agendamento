@@ -24,7 +24,7 @@ const Dashboard = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Carregar dados do usuário
       const userData = authService.getCurrentUser();
       setUser(userData);
@@ -35,7 +35,7 @@ const Dashboard = () => {
 
       // Calcular estatísticas
       calcularEstatisticas(agendamentos);
-      
+
     } catch (error) {
       console.error('Erro ao carregar dashboard:', error);
       alert('Erro ao carregar dados do dashboard');
@@ -44,29 +44,74 @@ const Dashboard = () => {
     }
   };
 
+  // ✅ Função para formatar data sem problemas de timezone
+  const formatarDataLocal = (dataString) => {
+    try {
+      // Divide a string YYYY-MM-DD e cria a data no timezone local
+      const [ano, mes, dia] = dataString.split('-').map(Number);
+      const dataLocal = new Date(ano, mes - 1, dia); // mes - 1 porque JavaScript usa 0-11
+      return dataLocal.toLocaleDateString('pt-BR');
+    } catch (error) {
+      console.error('Erro ao formatar data:', dataString, error);
+      return 'Data inválida';
+    }
+  };
+
   const calcularEstatisticas = (agendamentos) => {
-    const hoje = new Date().toISOString().split('T')[0];
-    
-    const consultasHoje = agendamentos.filter(ag => 
-      ag.data.split('T')[0] === hoje && ag.status === 'agendado'
-    ).length;
+    console.log('📊 CALCULANDO ESTATÍSTICAS - Agendamentos:', agendamentos);
 
+    // Data de HOJE em formato ISO (YYYY-MM-DD)
+    const hoje = new Date();
+    const hojeISO = hoje.toISOString().split('T')[0];
+
+    console.log('📅 HOJE (ISO):', hojeISO);
+
+    // Consultas de HOJE - comparação direta por string ISO
+    const consultasHoje = agendamentos.filter(ag => {
+      if (!ag.data) return false;
+
+      // A data já vem no formato YYYY-MM-DD do backend
+      const isHoje = ag.data === hojeISO;
+      const isAgendado = ag.status === 'agendado';
+
+      console.log(`🔍 ${ag.medico?.nome} - Data: ${ag.data} - Hoje: ${isHoje} - Status: ${ag.status}`);
+
+      return isHoje && isAgendado;
+    }).length;
+
+    console.log('🎯 CONSULTAS HOJE ENCONTRADAS:', consultasHoje);
+
+    // PRÓXIMA consulta (hoje ou futura) - comparação por string ISO
     const proxima = agendamentos
-      .filter(ag => new Date(ag.data) > new Date() && ag.status === 'agendado')
-      .sort((a, b) => new Date(a.data) - new Date(b.data))[0];
+      .filter(ag => {
+        if (!ag.data || ag.status !== 'agendado') return false;
 
-    const totalRealizadas = agendamentos.filter(ag => 
+        // Comparação por string ISO (YYYY-MM-DD)
+        return ag.data >= hojeISO;
+      })
+      .sort((a, b) => a.data.localeCompare(b.data))[0]; // Ordena por string
+
+    if (proxima) {
+      console.log('✅ PRÓXIMA CONSULTA:', {
+        medico: proxima.medico?.nome,
+        data: proxima.data,
+        dataFormatada: new Date(proxima.data).toLocaleDateString('pt-BR'),
+        horario: proxima.horario
+      });
+    }
+
+    const totalRealizadas = agendamentos.filter(ag =>
       ag.status === 'realizado'
     ).length;
 
-    const totalFaltas = agendamentos.filter(ag => 
+    const totalFaltas = agendamentos.filter(ag =>
       ag.status === 'cancelado'
     ).length;
 
     setEstatisticas({
       consultasHoje,
-      proximaConsulta: proxima ? 
-        `${new Date(proxima.data).toLocaleDateString('pt-BR')} - ${proxima.horario}` : 
+      proximaConsulta: proxima ?
+        `${formatarDataLocal(proxima.data)} - ${proxima.horario}` :
         'Nenhuma',
       totalRealizadas,
       totalFaltas
@@ -99,11 +144,6 @@ const Dashboard = () => {
         alert('Erro ao cancelar agendamento: ' + error.message);
       }
     }
-  };
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR');
   };
 
   const getStatusIcon = (status) => {
@@ -176,14 +216,6 @@ const Dashboard = () => {
                 <p>Ver todos os agendamentos</p>
               </div>
             </div>
-
-            <div className="action-card" onClick={handleVerHistorico}>
-              <div className="action-icon">📊</div>
-              <div className="action-text">
-                <h4>Histórico</h4>
-                <p>Consultas realizadas</p>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -195,7 +227,7 @@ const Dashboard = () => {
               Ver Todos
             </button>
           </div>
-          
+
           {proximosAgendamentos.length > 0 ? (
             <div className="agendamentos-list">
               {proximosAgendamentos.map((agendamento) => (
@@ -203,7 +235,7 @@ const Dashboard = () => {
                   <div className="agendamento-header">
                     <div className="agendamento-date">
                       <span className="date-badge">
-                        {formatDate(agendamento.data)}
+                        {formatarDataLocal(agendamento.data)}
                       </span>
                       <span className="time">{agendamento.horario}</span>
                     </div>
@@ -211,16 +243,16 @@ const Dashboard = () => {
                       {getStatusIcon(agendamento.status)} {getStatusText(agendamento.status)}
                     </div>
                   </div>
-                  
+
                   <div className="agendamento-info">
                     <h4 className="medico-name">{agendamento.medico?.nome || 'Médico'}</h4>
                     <p className="especialidade">{agendamento.medico?.especialidade || 'Especialidade'}</p>
                     <p className="local">📍 {agendamento.tipoConsulta === 'telemedicina' ? 'Consulta Online' : 'Consultório'}</p>
                   </div>
-                  
+
                   <div className="agendamento-actions">
                     {agendamento.status === 'agendado' && (
-                      <button 
+                      <button
                         className="action-btn danger"
                         onClick={() => handleCancelarAgendamento(agendamento._id)}
                       >
@@ -254,7 +286,7 @@ const Dashboard = () => {
                 <p>Consultas Hoje</p>
               </div>
             </div>
-            
+
             <div className="stat-card">
               <div className="stat-icon">⏰</div>
               <div className="stat-info">
@@ -262,7 +294,7 @@ const Dashboard = () => {
                 <p>Próxima Consulta</p>
               </div>
             </div>
-            
+
             <div className="stat-card">
               <div className="stat-icon">✅</div>
               <div className="stat-info">
@@ -270,7 +302,7 @@ const Dashboard = () => {
                 <p>Realizadas</p>
               </div>
             </div>
-            
+
             <div className="stat-card">
               <div className="stat-icon">❌</div>
               <div className="stat-info">
@@ -295,15 +327,15 @@ const Dashboard = () => {
 
       {/* Menu Inferior */}
       <div className="bottom-nav">
-        <button 
+        <button
           className={`nav-item ${activeMenu === 'home' ? 'active' : ''}`}
           onClick={() => setActiveMenu('home')}
         >
           <span className="nav-icon">🏠</span>
           <span className="nav-label">Home</span>
         </button>
-        
-        <button 
+
+        <button
           className={`nav-item ${activeMenu === 'agendar' ? 'active' : ''}`}
           onClick={() => {
             setActiveMenu('agendar');
@@ -313,19 +345,8 @@ const Dashboard = () => {
           <span className="nav-icon">📅</span>
           <span className="nav-label">Agendar</span>
         </button>
-        
-        <button 
-          className={`nav-item ${activeMenu === 'historico' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveMenu('historico');
-            handleVerHistorico();
-          }}
-        >
-          <span className="nav-icon">📋</span>
-          <span className="nav-label">Histórico</span>
-        </button>
-        
-        <button 
+
+        <button
           className={`nav-item ${activeMenu === 'perfil' ? 'active' : ''}`}
           onClick={() => {
             setActiveMenu('perfil');
