@@ -1,26 +1,20 @@
 {
-  "name": "nami-agendamento-client",
+  "name": "nami-agendamento-frontend",
   "version": "1.0.0",
-  "description": "Frontend React do Sistema NAMI Agendamento",
   "private": true,
-  "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.8.0",
-    "axios": "^1.3.0",
-    "web-vitals": "^3.2.0"
-  },
+  "homepage": ".",
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "CI=false react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "react-router-dom": "^6.8.0",
+    "axios": "^1.6.0"
   },
   "browserslist": {
     "production": [
@@ -33,9 +27,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "react-scripts": "5.0.1"
-  },
-  "proxy": "http://localhost:5000"
+  }
 }
